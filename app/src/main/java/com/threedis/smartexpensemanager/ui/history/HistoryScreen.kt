@@ -6,6 +6,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,7 +35,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
         )
         Spacer(Modifier.height(8.dp))
 
-        var sortMenuExpanded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+        var sortMenuExpanded by remember { mutableStateOf(false) }
         Box {
             OutlinedButton(onClick = { sortMenuExpanded = true }) {
                 Text("Sort: ${filter.sortOrder.name.replace('_', ' ')}")
