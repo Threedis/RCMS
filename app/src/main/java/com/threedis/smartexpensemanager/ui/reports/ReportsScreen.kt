@@ -23,8 +23,18 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     LaunchedEffect(period) { viewModel.loadReport(period) }
 
     LaunchedEffect(state.exportUri) {
-        state.exportUri?.let {
-            snackbarHostState.showSnackbar("Report exported successfully")
+        val uri = state.exportUri ?: return@LaunchedEffect
+        val mimeType = state.exportMimeType ?: "*/*"
+        try {
+            val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, mimeType)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(viewIntent)
+            snackbarHostState.showSnackbar("Report exported and opened")
+        } catch (e: android.content.ActivityNotFoundException) {
+            snackbarHostState.showSnackbar("Report exported. No app found to open it — use Share instead.")
         }
     }
     LaunchedEffect(state.exportError) {

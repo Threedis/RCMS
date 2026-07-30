@@ -10,7 +10,7 @@ A professional, fully offline Android expense-tracking application built with Ko
 - **Budget Management** — daily/weekly/monthly/financial-year budgets, overall or per-category, with automatic 50/70/80/90/100%-and-exceeded notifications on every new expense.
 - **Expense History** — filter by date range/category/payment method/location/amount range, full-text search, and four sort orders.
 - **Reports** — daily/weekly/monthly/quarterly/financial-year/yearly reports with total, average, highest, lowest, and transaction count.
-- **Export** — Excel (multi-sheet: details, category summary, budget summary, monthly summary), CSV, and PDF, saved via `FileProvider`.
+- **Export** — Excel (multi-sheet: details, category summary, budget summary, monthly summary), CSV, and PDF, saved via `FileProvider` and opened automatically for the user, with a Share action alongside.
 - **Backup & Restore** — one-tap local database backup/restore.
 - **Notifications** — budget alerts plus daily/weekly/monthly reminders via `AlarmManager`.
 - **Settings** — theme (light/dark/system, Material You dynamic color), currency, date format, financial-year start month, app lock/biometric toggle.
@@ -24,7 +24,7 @@ app/src/main/java/com/threedis/smartexpensemanager/
 │   └── repository/       # Repository pattern over the DAOs
 ├── di/                   # Hilt modules
 ├── notification/         # Budget alerts + reminder scheduling
-├── export/               # Excel (Apache POI), CSV, PDF exporters
+├── export/               # Excel (hand-rolled OOXML writer), CSV, PDF exporters
 ├── camera/               # CameraX capture + receipt compression
 ├── ui/
 │   ├── dashboard/ expense/ history/ budget/ reports/ settings/ category/
@@ -57,6 +57,19 @@ Unit tests under `app/src/test` cover the pure business logic that's safe to run
 
 Run with `./gradlew test`.
 
+## Security & Privacy
+
+The app is built so no expense data can leave the device:
+
+- **No `INTERNET` permission is declared anywhere in `AndroidManifest.xml`.** Android enforces this at the OS/kernel level — without it, the app cannot open a network socket at all, regardless of what any library inside it tries to do. There is no analytics SDK, crash reporter, or ad library in this project either.
+- **`network_security_config.xml`** additionally forbids cleartext (HTTP) traffic app-wide as a second, independent layer of defense, in case a future dependency were ever mistakenly granted `INTERNET`.
+- **`android:allowBackup="false"`** — disables both classic ADB/cloud backup and Android's Auto Backup to Google Drive, so the local database and receipts are never copied off the device by the OS either.
+- **All data lives in a local Room (SQLite) database** (`smart_expense_manager.db`, app-private storage) and app-private folders (`getExternalFilesDir` for receipts/exports/backups) — not shared storage, not a content provider open to other apps.
+- **`FileProvider` only exposes the specific `receipts/`, `exports/`, `backups/`, and camera-cache folders** (see `res/xml/file_paths.xml`) it needs to hand a file to the camera app or a share/view intent — never the whole filesystem or database file directly.
+- **Release builds run R8/ProGuard minification** (`isMinifyEnabled = true`), which also strips unused code paths.
+
+Not yet implemented, and worth doing before shipping to production: encrypting the Room database at rest (e.g. via SQLCipher) and gating it behind the biometric/PIN lock toggle already present in Settings — currently that toggle is UI-only. Ask if you'd like this added; it's a larger change since it introduces a native dependency and a passphrase-management flow.
+
 ## Notes on scope
 
-This scaffold implements the full architecture and the core user flows end-to-end (entry → budget check → notification → dashboard/history/reports → export → backup). Some of the more exhaustive spec items (e.g. PIN-lock screen UI, per-report chart rendering with MPAndroidChart, WorkManager-based missed-entry detection) are wired for in the dependency/module layer and are the natural next slice of work on top of this foundation.
+This scaffold implements the full architecture and the core user flows end-to-end (entry → budget check → notification → dashboard/history/reports → export → backup). Some of the more exhaustive spec items (e.g. PIN-lock screen UI, WorkManager-based missed-entry detection) are wired for in the dependency/module layer and are the natural next slice of work on top of this foundation.

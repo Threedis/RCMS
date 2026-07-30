@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Smart Expense Manager works entirely offline: the app declares no INTERNET permission
+    anywhere in the manifest, so the OS blocks it from opening any network socket at all,
+    regardless of what any library does internally. This config is a second, independent
+    layer of defense: even if a future dependency were mistakenly granted INTERNET, this
+    forbids plaintext HTTP for every domain (base-config, no per-domain exceptions) and
+    disallows user-added/VPN CAs from intercepting traffic for this app.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

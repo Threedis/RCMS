@@ -29,6 +29,7 @@ data class ReportUiState(
     val lowest: Double = 0.0,
     val count: Int = 0,
     val exportUri: android.net.Uri? = null,
+    val exportMimeType: String? = null,
     val exportError: String? = null
 )
 
@@ -76,7 +77,12 @@ class ReportsViewModel @Inject constructor(
                 val categories: List<Category> = categoryRepository.observeAllCategories().first()
                 val rows = buildExportRows(_uiState.value.expenses, categories)
                 val uri = exportManager.exportUri(format, rows)
-                _uiState.value = _uiState.value.copy(exportUri = uri, exportError = null)
+                val mimeType = when (format) {
+                    ExportFormat.EXCEL -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    ExportFormat.CSV -> "text/csv"
+                    ExportFormat.PDF -> "application/pdf"
+                }
+                _uiState.value = _uiState.value.copy(exportUri = uri, exportMimeType = mimeType, exportError = null)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(exportError = e.message ?: "Export failed")
             }
