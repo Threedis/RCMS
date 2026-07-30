@@ -95,12 +95,9 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")
 
-    // Charts
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
-
-    // Excel export
-    implementation("org.apache.poi:poi:5.2.5")
-    implementation("org.apache.poi:poi-ooxml:5.2.5")
+    // Charts: rendered natively with Compose Canvas (ui/common/PieChart.kt), no external library needed.
+    // Excel export: hand-rolled OOXML writer (export/SimpleXlsxWriter.kt), no external library needed -
+    // Apache POI depends on javax.xml/java.awt classes that don't work on the Android runtime.
 
     // Biometric
     implementation("androidx.biometric:biometric:1.1.0")

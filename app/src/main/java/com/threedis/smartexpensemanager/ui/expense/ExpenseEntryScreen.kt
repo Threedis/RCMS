@@ -24,11 +24,21 @@ fun ExpenseEntryScreen(
     var categoryMenuExpanded by remember { mutableStateOf(false) }
     var paymentMenuExpanded by remember { mutableStateOf(false) }
 
-    LaunchedEffect(saveResult) {
-        if (saveResult is SaveResult.Success) {
-            viewModel.resetSaveResult()
-            onDone()
-        }
+    if (saveResult is SaveResult.Success) {
+        AlertDialog(
+            onDismissRequest = { viewModel.resetSaveResult() },
+            title = { Text("Expense Saved") },
+            text = { Text("Your expense was recorded successfully.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.resetSaveResult()
+                    onDone()
+                }) { Text("Done") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.resetSaveResult() }) { Text("Add Another") }
+            }
+        )
     }
 
     Column(

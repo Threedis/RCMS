@@ -12,7 +12,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.threedis.smartexpensemanager.ui.common.PieChart
+import com.threedis.smartexpensemanager.ui.common.PieChartLegendRow
+import com.threedis.smartexpensemanager.ui.common.PieSlice
+import com.threedis.smartexpensemanager.ui.common.colorForIndex
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     onAddExpense: () -> Unit,
@@ -58,18 +63,43 @@ fun DashboardScreen(
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Expenses by Category", style = MaterialTheme.typography.titleMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Expenses by Category", style = MaterialTheme.typography.titleMedium)
+                    }
                     Spacer(Modifier.height(8.dp))
-                    if (state.categoryBreakdown.isEmpty()) {
-                        Text("No expenses yet this month", style = MaterialTheme.typography.bodyMedium)
-                    } else {
-                        state.categoryBreakdown.sortedByDescending { it.amount }.forEach { slice ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
+
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        ChartPeriod.entries.forEachIndexed { index, period ->
+                            SegmentedButton(
+                                selected = state.chartPeriod == period,
+                                onClick = { viewModel.selectChartPeriod(period) },
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = ChartPeriod.entries.size)
                             ) {
-                                Text(slice.category?.name ?: "Uncategorized")
-                                Text("%.2f".format(slice.amount), fontWeight = FontWeight.Medium)
+                                Text(period.name.lowercase().replaceFirstChar { it.uppercase() })
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+
+                    if (state.categoryBreakdown.isEmpty()) {
+                        Text("No expenses in this period", style = MaterialTheme.typography.bodyMedium)
+                    } else {
+                        val total = state.categoryBreakdown.sumOf { it.amount }
+                        val pieSlices = state.categoryBreakdown.mapIndexed { index, slice ->
+                            PieSlice(slice.category?.name ?: "Uncategorized", slice.amount, colorForIndex(index))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            PieChart(slices = pieSlices, modifier = Modifier.weight(1f))
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                pieSlices.forEach { slice ->
+                                    val percent = if (total <= 0.0) 0.0 else (slice.value / total) * 100.0
+                                    PieChartLegendRow(slice, percent)
+                                }
                             }
                         }
                     }

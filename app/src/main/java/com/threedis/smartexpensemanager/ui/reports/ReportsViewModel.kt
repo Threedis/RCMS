@@ -28,7 +28,8 @@ data class ReportUiState(
     val highest: Double = 0.0,
     val lowest: Double = 0.0,
     val count: Int = 0,
-    val exportUri: android.net.Uri? = null
+    val exportUri: android.net.Uri? = null,
+    val exportError: String? = null
 )
 
 @HiltViewModel
@@ -71,10 +72,18 @@ class ReportsViewModel @Inject constructor(
 
     fun export(format: ExportFormat) {
         viewModelScope.launch {
-            val categories: List<Category> = categoryRepository.observeAllCategories().first()
-            val rows = buildExportRows(_uiState.value.expenses, categories)
-            val uri = exportManager.exportUri(format, rows)
-            _uiState.value = _uiState.value.copy(exportUri = uri)
+            try {
+                val categories: List<Category> = categoryRepository.observeAllCategories().first()
+                val rows = buildExportRows(_uiState.value.expenses, categories)
+                val uri = exportManager.exportUri(format, rows)
+                _uiState.value = _uiState.value.copy(exportUri = uri, exportError = null)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(exportError = e.message ?: "Export failed")
+            }
         }
+    }
+
+    fun clearExportError() {
+        _uiState.value = _uiState.value.copy(exportError = null)
     }
 }
