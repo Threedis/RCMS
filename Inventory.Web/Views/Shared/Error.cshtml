@@ -1,0 +1,62 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12 col-md-6 mx-auto">
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center p-5">
+                <div style="font-size:4rem;margin-bottom:1rem;">
+                    @if (Model?.StatusCode == 404)
+                    {
+                        <i class="bi bi-question-circle text-warning"></i>
+                    }
+                    else if (Model?.StatusCode == 403)
+                    {
+                        <i class="bi bi-exclamation-triangle text-danger"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-exclamation-circle text-danger"></i>
+                    }
+                </div>
+
+                <h2 class="h4 mb-2">@Model?.StatusCode</h2>
+                <h3 class="h6 text-muted mb-3">@Model?.Title</h3>
+
+                @if (!string.IsNullOrWhiteSpace(Model?.Message))
+                {
+                    <p class="text-muted mb-4">@Model.Message</p>
+                }
+
+                @if (Model?.StatusCode == 404)
+                {
+                    <p class="text-muted small mb-4">The page you're looking for doesn't exist.</p>
+                }
+                else if (Model?.StatusCode == 403)
+                {
+                    <p class="text-muted small mb-4">You don't have permission to access this resource.</p>
+                }
+                else if (Model?.StatusCode >= 500)
+                {
+                    <p class="text-muted small mb-4">Something went wrong on our end. Please try again later.</p>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model?.RequestId))
+                {
+                    <p class="text-muted" style="font-size:0.8rem;">
+                        Request ID: <code>@Model.RequestId</code>
+                    </p>
+                }
+
+                <div class="mt-4">
+                    <a href="/" class="btn btn-primary">
+                        <i class="bi bi-house-door me-1"></i>Go to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,316 @@
+@model DocumentFormViewModel<IssueDto>
+@{
+    ViewData["Title"] = Model.Document.Id == 0 ? "New Material Issue" : "Edit Material Issue";
+    ViewData["Icon"] = "bi-box-arrow-up";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">@ViewData["Title"]</h2>
+                <a href="/Issue" class="btn btn-sm btn-outline-secondary"><i class="bi bi-chevron-left me-1"></i>Back</a>
+            </div>
+            <div class="card-body">
+                <form id="issueForm" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" value="@Model.Document.Id" />
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label" for="IssueNumber">Issue No.</label>
+                            <input type="text" class="form-control" id="IssueNumber" value="@Model.Document.IssueNumber"
+                                   readonly />
+                            <div class="form-text">Auto-generated</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="IssueDate">Issue Date</label>
+                            <input type="date" class="form-control" id="IssueDate" name="IssueDate"
+                                   value="@Model.Document.IssueDate.ToString("yyyy-MM-dd")" required />
+                            <div class="invalid-feedback" data-valmsg-for="IssueDate"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="ReferenceNumber">Reference No.</label>
+                            <input type="text" class="form-control" id="ReferenceNumber" name="ReferenceNumber"
+                                   maxlength="50" value="@Model.Document.ReferenceNumber" />
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label required">Issued To</label>
+                            <div class="mb-2">
+                                <div class="btn-group d-flex" role="group">
+                                    <input type="radio" class="btn-check" name="IssuedToType" id="typeEngineer"
+                                           value="Engineer" @(Model.Document.IssuedToType == "Engineer" ? "checked" : "") />
+                                    <label class="btn btn-outline-secondary" for="typeEngineer">Engineer</label>
+                                    <input type="radio" class="btn-check" name="IssuedToType" id="typeDepartment"
+                                           value="Department" @(Model.Document.IssuedToType == "Department" ? "checked" : "") />
+                                    <label class="btn btn-outline-secondary" for="typeDepartment">Department</label>
+                                </div>
+                            </div>
+                            <select class="form-select" id="IssuedToId" name="IssuedToId" required>
+                                <option value="">— Select —</option>
+                            </select>
+                            <div class="invalid-feedback" data-valmsg-for="IssuedToId"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required" for="WarehouseId">Warehouse</label>
+                            <select class="form-select" id="WarehouseId" name="WarehouseId" required>
+                                <option value="">— Select warehouse —</option>
+                                @foreach (var wh in Model.Lookups.Warehouses.OrderBy(w => w.Name))
+                                {
+                                    <option value="@wh.Id" @(Model.Document.WarehouseId == wh.Id ? "selected" : "")>
+                                        @wh.Code - @wh.Name
+                                    </option>
+                                }
+                            </select>
+                            <div class="invalid-feedback" data-valmsg-for="WarehouseId"></div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <label class="form-label" for="Description">Notes</label>
+                            <textarea class="form-control" id="Description" name="Description" rows="3"
+                                      maxlength="500">@Model.Document.Description</textarea>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="mb-3">
+                        <h5 class="mb-3">Line Items</h5>
+                        <div class="table-responsive-card">
+                            <table class="table table-sm line-grid">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:8rem;">Item Code</th>
+                                        <th>Item Name</th>
+                                        <th style="width:7rem;">Req Qty</th>
+                                        <th style="width:7rem;">Avail Qty</th>
+                                        <th style="width:7rem;">UOM</th>
+                                        <th style="width:7rem;" class="text-end">Rate</th>
+                                        <th style="width:8rem;" class="text-end">Amount</th>
+                                        <th style="width:4rem;" class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lineGrid">
+                                    @if (Model.Document.Lines != null && Model.Document.Lines.Count > 0)
+                                    {
+                                        @foreach (var line in Model.Document.Lines)
+                                        {
+                                            <tr data-line-id="@line.Id">
+                                                <td>
+                                                    <input type="text" class="form-control item-code" value="@line.ItemCode" readonly />
+                                                    <input type="hidden" name="LineItems[@line.Id].ItemId" value="@line.ItemId" />
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control item-name" value="@line.ItemName" readonly />
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control qty-input line-qty" name="LineItems[@line.Id].Quantity"
+                                                           value="@line.Quantity" step="0.01" min="0" required />
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control available-qty" value="0" readonly />
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control" value="@line.UnitSymbol" readonly />
+                                                </td>
+                                                <td class="text-end">
+                                                    <input type="number" class="form-control text-end line-rate" name="LineItems[@line.Id].Rate"
+                                                           value="@line.Rate" step="0.01" min="0" required />
+                                                </td>
+                                                <td class="text-end fw-semibold line-amount">@line.Amount.ToString("N2")</td>
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-sm btn-link p-0 text-danger btn-remove-line">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="6" class="text-end fw-semibold">Total</td>
+                                        <td class="text-end fw-semibold">
+                                            <span id="lineTotal">@Model.Document.Lines?.Sum(l => l.Amount).ToString("N2") ?? "0.00"</span>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="btnAddLine">
+                            <i class="bi bi-plus-lg me-1"></i>Add Line
+                        </button>
+                    </div>
+
+                    <div class="alert alert-danger mt-3 d-none" id="issueFormErrors"></div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i>Save
+                        </button>
+                        <a href="/Issue" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const form = $('#issueForm');
+            let lookups = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Lookups));
+
+            function populateIssuedToSelect() {
+                const $select = $('#IssuedToId');
+                $select.empty().append('<option value="">— Select —</option>');
+
+                if ($('#typeEngineer').is(':checked')) {
+                    lookups.engineers.forEach(e => {
+                        $select.append(`<option value="${e.id}">${e.code} - ${e.name}</option>`);
+                    });
+                } else {
+                    lookups.departments.forEach(d => {
+                        $select.append(`<option value="${d.id}">${d.code} - ${d.name}</option>`);
+                    });
+                }
+
+                $select.val('@Model.Document.IssuedToId');
+            }
+
+            $('input[name="IssuedToType"]').on('change', populateIssuedToSelect);
+
+            function addLineRow() {
+                const lineCount = $('#lineGrid tbody tr').length + 1;
+                const html = `
+                    <tr data-line-id="new${lineCount}">
+                        <td>
+                            <input type="text" class="form-control item-code item-picker" placeholder="Search item..." />
+                            <input type="hidden" name="LineItems[new${lineCount}].ItemId" value="0" class="item-id" />
+                        </td>
+                        <td>
+                            <input type="text" class="form-control item-name" readonly />
+                        </td>
+                        <td>
+                            <input type="number" class="form-control qty-input line-qty" name="LineItems[new${lineCount}].Quantity"
+                                   step="0.01" min="0" required />
+                        </td>
+                        <td>
+                            <input type="text" class="form-control available-qty" readonly />
+                        </td>
+                        <td>
+                            <input type="text" class="form-control unit-symbol" readonly />
+                        </td>
+                        <td class="text-end">
+                            <input type="number" class="form-control text-end line-rate" name="LineItems[new${lineCount}].Rate"
+                                   step="0.01" min="0" required />
+                        </td>
+                        <td class="text-end fw-semibold line-amount">0.00</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-link p-0 text-danger btn-remove-line">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                $('#lineGrid').append(html);
+                initializeItemPicker($(`#lineGrid tr[data-line-id="new${lineCount}"] .item-picker`));
+            }
+
+            function initializeItemPicker($input) {
+                $input.select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    ajax: {
+                        url: '/Item/Search',
+                        dataType: 'json',
+                        delay: 250,
+                        data: params => ({ q: params.term }),
+                        processResults: data => ({ results: data.map(i => ({ id: i.id, text: `${i.code} - ${i.name}` })) })
+                    }
+                }).on('select2:select', function (e) {
+                    const item = lookups.items.find(i => i.id == e.params.data.id);
+                    if (item) {
+                        const $row = $(this).closest('tr');
+                        const warehouseId = $('#WarehouseId').val();
+                        $row.find('.item-id').val(item.id);
+                        $row.find('.item-name').val(item.name);
+                        $row.find('.unit-symbol').val(item.unitSymbol);
+
+                        // Fetch available balance
+                        if (warehouseId) {
+                            inv.get('/Issue/Balance', { itemId: item.id, warehouseId }).then(response => {
+                                if (response.success) {
+                                    $row.find('.available-qty').val(response.data.balance.toFixed(2));
+                                }
+                            });
+                        }
+
+                        $row.find('.line-qty').focus();
+                    }
+                });
+            }
+
+            function updateLineAmounts() {
+                let total = 0;
+                $('#lineGrid tbody tr').each(function () {
+                    const qty = parseFloat($(this).find('.line-qty').val()) || 0;
+                    const rate = parseFloat($(this).find('.line-rate').val()) || 0;
+                    const amount = qty * rate;
+                    $(this).find('.line-amount').text(amount.toFixed(2));
+                    total += amount;
+                });
+                $('#lineTotal').text(total.toFixed(2));
+            }
+
+            $('#btnAddLine').on('click', function (e) {
+                e.preventDefault();
+                addLineRow();
+            });
+
+            $('#lineGrid').on('click', '.btn-remove-line', function (e) {
+                e.preventDefault();
+                $(this).closest('tr').remove();
+                updateLineAmounts();
+            });
+
+            $('#lineGrid').on('change', '.line-qty, .line-rate', function () {
+                updateLineAmounts();
+            });
+
+            form.on('submit', function (e) {
+                e.preventDefault();
+
+                if (!inv.validateForm(form)) return;
+                if ($('#lineGrid tbody tr').length === 0) {
+                    inv.toast('Add at least one line item.', 'danger');
+                    return;
+                }
+
+                inv.postForm('/Issue/Save', form).then(response => {
+                    if (response.success) {
+                        inv.toast(response.message, 'success');
+                        setTimeout(() => window.location.href = '/Issue', 500);
+                    } else {
+                        inv.showErrors(form, response, '#issueFormErrors');
+                    }
+                });
+            });
+
+            // Initialize
+            populateIssuedToSelect();
+            $('.item-picker').each(function () {
+                initializeItemPicker($(this));
+            });
+            updateLineAmounts();
+        })();
+    </script>
+}

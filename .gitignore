@@ -1,0 +1,54 @@
+## Visual Studio / .NET
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Ll]og/
+[Ll]ogs/
+.vs/
+*.user
+*.suo
+*.userprefs
+*.rsuser
+*.userosscache
+*.sln.docstates
+*.dbmdl
+*.jfm
+*.pfx
+*.publishsettings
+PublishProfiles/
+*.azurePubxml
+project.lock.json
+project.fragment.lock.json
+artifacts/
+TestResults/
+[Cc]overage*/
+*.coverage
+*.coveragexml
+BenchmarkDotNet.Artifacts/
+
+## Rider / VS Code
+.idea/
+.vscode/
+*.sln.iml
+
+## NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+
+## Node (front-end tooling, if added later)
+node_modules/
+
+## Application runtime artefacts
+Inventory.Web/wwwroot/uploads/
+Inventory.Web/Logs/
+Inventory.Web/appsettings.Local.json
+appsettings.*.local.json
+
+## OS
+.DS_Store
+Thumbs.db

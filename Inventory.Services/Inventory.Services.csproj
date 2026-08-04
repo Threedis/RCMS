@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Inventory.Services</RootNamespace>
+    <AssemblyName>Inventory.Services</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Reporting / document generation -->
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
+    <PackageReference Include="QuestPDF" Version="2024.12.3" />
+    <!-- Cross-cutting infrastructure -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageReference Include="MailKit" Version="4.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inventory.Common\Inventory.Common.csproj" />
+    <ProjectReference Include="..\Inventory.Entities\Inventory.Entities.csproj" />
+  </ItemGroup>
+
+</Project>

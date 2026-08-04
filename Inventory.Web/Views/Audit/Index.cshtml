@@ -1,0 +1,184 @@
+@model MasterDto
+@{
+    ViewData["Title"] = "Audit Log";
+    ViewData["Icon"] = "bi-shield-check";
+    ViewData["Subtitle"] = "System activity and change tracking";
+
+    var isAdmin = User.IsInRole(Roles.Administrator);
+}
+
+@section PageActions {
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="excel">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+    </a>
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="pdf">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+    </a>
+}
+
+@Html.Partial("~/Views/Shared/_FilterPanel.cshtml",
+    new FilterViewModel { VisibleFilters = new[] { "dateRange" } })
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover table-sm align-middle w-100" id="auditGrid">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:8rem;">Timestamp</th>
+                    <th>User</th>
+                    <th>Entity</th>
+                    <th>Action</th>
+                    <th class="d-none d-lg-table-cell">Changes</th>
+                    <th class="d-none d-md-table-cell">IP Address</th>
+                    <th class="text-end" style="width:6rem;">Details</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@* Details Modal *@
+<div class="modal fade" id="auditDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Audit Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <dl id="auditDetails" class="row"></dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const modal = new bootstrap.Modal('#auditDetailsModal');
+
+            const grid = inv.grid('#auditGrid', {
+                url: '/Audit/List',
+                columns: [
+                    {
+                        data: 'changedOn',
+                        render: inv.render.dateTime
+                    },
+                    { data: 'userName' },
+                    { data: 'entityType' },
+                    {
+                        data: 'action',
+                        render: action => {
+                            const actions = {
+                                'Created': '<span class="badge bg-success">Created</span>',
+                                'Updated': '<span class="badge bg-info">Updated</span>',
+                                'Deleted': '<span class="badge bg-danger">Deleted</span>',
+                                'Submitted': '<span class="badge bg-warning">Submitted</span>',
+                                'Approved': '<span class="badge bg-success">Approved</span>',
+                                'Rejected': '<span class="badge bg-danger">Rejected</span>',
+                                'Dispatched': '<span class="badge bg-info">Dispatched</span>'
+                            };
+                            return actions[action] || action;
+                        }
+                    },
+                    {
+                        data: 'changes',
+                        className: 'd-none d-lg-table-cell',
+                        render: changes => {
+                            if (!changes) return '—';
+                            const items = changes.split('|').slice(0, 2);
+                            return items.join('<br/>') + (changes.split('|').length > 2 ? '<br/><em>...</em>' : '');
+                        }
+                    },
+                    {
+                        data: 'ipAddress',
+                        className: 'd-none d-md-table-cell'
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function (id) {
+                            return `<button type="button" class="btn btn-sm btn-link p-1 js-view-details" data-id="${id}">
+                                        <i class="bi bi-arrow-up-right"></i>
+                                    </button>`;
+                        }
+                    }
+                ],
+                order: [[0, 'desc']]
+            });
+
+            $('#auditGrid').on('click', '.js-view-details', function () {
+                const id = $(this).data('id');
+
+                inv.get('/Audit/Get', { id }).then(response => {
+                    if (!response.success) {
+                        inv.toast(response.message, 'danger');
+                        return;
+                    }
+
+                    const audit = response.data;
+                    const html = `
+                        <dt class="col-4">Timestamp</dt>
+                        <dd class="col-8">${inv.render.dateTime(audit.changedOn)}</dd>
+
+                        <dt class="col-4">User</dt>
+                        <dd class="col-8">${audit.userName}</dd>
+
+                        <dt class="col-4">Entity</dt>
+                        <dd class="col-8">${audit.entityType}</dd>
+
+                        <dt class="col-4">Action</dt>
+                        <dd class="col-8">${audit.action}</dd>
+
+                        <dt class="col-4">Record ID</dt>
+                        <dd class="col-8"><code>${audit.recordId}</code></dd>
+
+                        <dt class="col-4">IP Address</dt>
+                        <dd class="col-8">${audit.ipAddress}</dd>
+
+                        <dt class="col-4">User Agent</dt>
+                        <dd class="col-8"><small>${audit.userAgent}</small></dd>
+
+                        ${audit.changes ? `
+                        <dt class="col-4">Changes</dt>
+                        <dd class="col-8">
+                            <pre style="background:#f8f9fa;padding:.5rem;border-radius:.25rem;font-size:.8rem;max-height:15rem;overflow-y:auto;">${inv.escape(audit.changes)}</pre>
+                        </dd>
+                        ` : ''}
+
+                        ${audit.remarks ? `
+                        <dt class="col-4">Remarks</dt>
+                        <dd class="col-8">${inv.escape(audit.remarks)}</dd>
+                        ` : ''}
+                    `;
+
+                    $('#auditDetails').html(html);
+                    modal.show();
+                });
+            });
+
+            // Filter apply
+            $('#filterApply').on('click', function () {
+                const filters = {
+                    fromDate: $('#filterFromDate').val(),
+                    toDate: $('#filterToDate').val()
+                };
+                grid.settings().ajax.data = function () { return filters; };
+                grid.ajax.reload();
+            });
+
+            $('#filterReset').on('click', function () {
+                $('#filterFromDate, #filterToDate').val('').trigger('change');
+                grid.settings().ajax.data = function () { return {}; };
+                grid.ajax.reload();
+            });
+        })();
+    </script>
+}

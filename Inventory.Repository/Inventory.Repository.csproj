@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Inventory.Repository</RootNamespace>
+    <AssemblyName>Inventory.Repository</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inventory.Common\Inventory.Common.csproj" />
+    <ProjectReference Include="..\Inventory.DAL\Inventory.DAL.csproj" />
+    <ProjectReference Include="..\Inventory.Entities\Inventory.Entities.csproj" />
+  </ItemGroup>
+
+</Project>

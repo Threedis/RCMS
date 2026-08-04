@@ -1,0 +1,194 @@
+@*
+    Vendor create/edit modal. The statutory identifiers are validated both here
+    (format) and in the business layer (uniqueness and PAN/GSTIN consistency),
+    because an import or an API caller never passes through this form.
+*@
+<div class="modal fade" id="vendorModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <form id="vendorForm" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="Id" value="0" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="vendorModalTitle">New Vendor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#vendorGeneral"
+                                    type="button" role="tab">General</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#vendorStatutory"
+                                    type="button" role="tab">Statutory &amp; Bank</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#vendorCommercial"
+                                    type="button" role="tab">Commercial</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+
+                        @* ---- General ------------------------------------- *@
+                        <div class="tab-pane fade show active" id="vendorGeneral" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label" for="Code">Code</label>
+                                    <input type="text" class="form-control" id="Code" name="Code" maxlength="30" />
+                                    <div class="form-text">Leave blank to generate one.</div>
+                                    <div class="invalid-feedback" data-valmsg-for="Code"></div>
+                                </div>
+                                <div class="col-md-9">
+                                    <label class="form-label required" for="Name">Vendor Name</label>
+                                    <input type="text" class="form-control" id="Name" name="Name"
+                                           maxlength="150" required />
+                                    <div class="invalid-feedback" data-valmsg-for="Name"></div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label" for="Address">Address</label>
+                                    <textarea class="form-control" id="Address" name="Address"
+                                              rows="2" maxlength="400"></textarea>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label" for="City">City</label>
+                                    <input type="text" class="form-control" id="City" name="City" maxlength="100" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="State">State</label>
+                                    <input type="text" class="form-control" id="State" name="State" maxlength="100" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="PinCode">PIN Code</label>
+                                    <input type="text" class="form-control" id="PinCode" name="PinCode"
+                                           maxlength="6" pattern="\d{6}" />
+                                    <div class="invalid-feedback" data-valmsg-for="PinCode"></div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label" for="ContactPerson">Contact Person</label>
+                                    <input type="text" class="form-control" id="ContactPerson"
+                                           name="ContactPerson" maxlength="150" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="ContactNumber">Contact Number</label>
+                                    <input type="tel" class="form-control" id="ContactNumber"
+                                           name="ContactNumber" maxlength="20" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="Email">E-mail</label>
+                                    <input type="email" class="form-control" id="Email" name="Email" maxlength="150" />
+                                    <div class="invalid-feedback" data-valmsg-for="Email"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* ---- Statutory ----------------------------------- *@
+                        <div class="tab-pane fade" id="vendorStatutory" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="GstNumber">GSTIN</label>
+                                    <input type="text" class="form-control text-uppercase" id="GstNumber"
+                                           name="GstNumber" maxlength="15"
+                                           pattern="[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}" />
+                                    <div class="form-text">15 characters; characters 3-12 are the holder's PAN.</div>
+                                    <div class="invalid-feedback" data-valmsg-for="GstNumber"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="PanNumber">PAN</label>
+                                    <input type="text" class="form-control text-uppercase" id="PanNumber"
+                                           name="PanNumber" maxlength="10" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" />
+                                    <div class="invalid-feedback" data-valmsg-for="PanNumber"></div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label" for="BankName">Bank Name</label>
+                                    <input type="text" class="form-control" id="BankName" name="BankName"
+                                           maxlength="100" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="BankAccountNumber">Account Number</label>
+                                    <input type="text" class="form-control" id="BankAccountNumber"
+                                           name="BankAccountNumber" maxlength="30" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="IfscCode">IFSC Code</label>
+                                    <input type="text" class="form-control text-uppercase" id="IfscCode"
+                                           name="IfscCode" maxlength="11" pattern="[A-Z]{4}0[A-Z0-9]{6}" />
+                                    <div class="invalid-feedback" data-valmsg-for="IfscCode"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* ---- Commercial ---------------------------------- *@
+                        <div class="tab-pane fade" id="vendorCommercial" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label" for="CreditDays">Credit Days</label>
+                                    <input type="number" class="form-control" id="CreditDays" name="CreditDays"
+                                           min="0" max="365" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="Rating">Rating (1-5)</label>
+                                    <select class="form-select" id="Rating" name="Rating">
+                                        <option value="">Not rated</option>
+                                        <option value="1">1 — Poor</option>
+                                        <option value="2">2 — Below average</option>
+                                        <option value="3">3 — Average</option>
+                                        <option value="4">4 — Good</option>
+                                        <option value="5">5 — Excellent</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="DisplayOrder">Display Order</label>
+                                    <input type="number" class="form-control" id="DisplayOrder" name="DisplayOrder"
+                                           value="0" min="0" max="9999" />
+                                </div>
+
+                                <div class="col-md-3 d-flex align-items-end gap-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="IsActive"
+                                               name="IsActive" value="true" checked />
+                                        <input type="hidden" name="IsActive" value="false" />
+                                        <label class="form-check-label" for="IsActive">Active</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="IsBlacklisted"
+                                               name="IsBlacklisted" value="true" />
+                                        <input type="hidden" name="IsBlacklisted" value="false" />
+                                        <label class="form-check-label text-danger" for="IsBlacklisted">
+                                            Blacklisted — cannot be selected on a new goods receipt note
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label" for="Description">Notes</label>
+                                    <textarea class="form-control" id="Description" name="Description"
+                                              rows="2" maxlength="500"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger mt-3 d-none" id="vendorFormErrors"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i>Save Vendor
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

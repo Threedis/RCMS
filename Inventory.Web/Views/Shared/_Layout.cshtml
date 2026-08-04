@@ -1,0 +1,103 @@
+@using Microsoft.Extensions.Options
+@using Inventory.Common.Configuration
+@inject IOptions<ApplicationSettings> AppSettings
+@{
+    var settings = AppSettings.Value;
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · @settings.ApplicationName</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/datatables/datatables.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/select2/select2.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="app-body">
+
+    @* The anti-forgery token every AJAX request sends back in a header. *@
+    @Html.AntiForgeryToken()
+
+    <div class="app-shell">
+        <partial name="_Sidebar" model="currentController" />
+
+        <div class="app-content">
+            <partial name="_Navbar" />
+
+            <main class="app-main" role="main">
+                <div class="container-fluid px-4 py-3">
+                    @if (ViewData["Title"] is not null)
+                    {
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                            <div>
+                                <h1 class="h4 mb-0">
+                                    @if (ViewData["Icon"] is string icon && !string.IsNullOrWhiteSpace(icon))
+                                    {
+                                        <i class="bi @icon me-2 text-primary"></i>
+                                    }
+                                    @ViewData["Title"]
+                                </h1>
+                                @if (ViewData["Subtitle"] is string subtitle && !string.IsNullOrWhiteSpace(subtitle))
+                                {
+                                    <small class="text-muted">@subtitle</small>
+                                }
+                            </div>
+                            <div class="page-actions d-flex gap-2">
+                                @await RenderSectionAsync("PageActions", required: false)
+                            </div>
+                        </div>
+                    }
+
+                    <partial name="_Alerts" />
+
+                    @RenderBody()
+                </div>
+            </main>
+
+            <footer class="app-footer border-top">
+                <div class="container-fluid px-4 py-2 d-flex justify-content-between small text-muted">
+                    <span>&copy; @DateTime.Now.Year @settings.CompanyName</span>
+                    <span>@settings.ApplicationName v1.0</span>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    @* Confirmation dialog reused by every delete and workflow action. *@
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmModalTitle">Please confirm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="confirmModalBody">Are you sure?</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmModalOk">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
+    <script src="~/lib/jquery/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+    <script src="~/lib/jquery-validation/jquery.validate.min.js" asp-append-version="true"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js" asp-append-version="true"></script>
+    <script src="~/lib/datatables/datatables.min.js" asp-append-version="true"></script>
+    <script src="~/lib/select2/select2.min.js" asp-append-version="true"></script>
+    <script src="~/lib/chartjs/chart.umd.min.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

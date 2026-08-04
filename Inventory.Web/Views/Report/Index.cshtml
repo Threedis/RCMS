@@ -1,0 +1,178 @@
+@model MasterDto
+@{
+    ViewData["Title"] = "Reports";
+    ViewData["Icon"] = "bi-file-earmark-bar-graph";
+    ViewData["Subtitle"] = "Business intelligence and analytics";
+}
+
+<div class="row g-3">
+    <div class="col-md-6 col-lg-4">
+        <a href="/Report/View?type=ReceiptRegister" class="card shadow-sm text-decoration-none h-100" style="transition: all .2s ease;">
+            <div class="card-body d-flex align-items-start gap-3">
+                <div>
+                    <i class="bi bi-inbox text-primary" style="font-size:1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title">Receipt Register</h5>
+                    <p class="card-text text-muted small">Inward goods summary with vendor details</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0">
+                <small class="text-muted">GRN data • Filterable</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <a href="/Report/View?type=IssueRegister" class="card shadow-sm text-decoration-none h-100" style="transition: all .2s ease;">
+            <div class="card-body d-flex align-items-start gap-3">
+                <div>
+                    <i class="bi bi-box-arrow-up text-info" style="font-size:1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title">Issue Register</h5>
+                    <p class="card-text text-muted small">Outward materials with consumption tracking</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0">
+                <small class="text-muted">Issue data • Filterable</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <a href="/Report/View?type=CurrentStock" class="card shadow-sm text-decoration-none h-100" style="transition: all .2s ease;">
+            <div class="card-body d-flex align-items-start gap-3">
+                <div>
+                    <i class="bi bi-boxes text-success" style="font-size:1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title">Current Stock</h5>
+                    <p class="card-text text-muted small">Real-time inventory balances by location</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0">
+                <small class="text-muted">Stock data • Sortable</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <a href="/Report/View?type=LowStock" class="card shadow-sm text-decoration-none h-100" style="transition: all .2s ease;">
+            <div class="card-body d-flex align-items-start gap-3">
+                <div>
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size:1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title">Low Stock Report</h5>
+                    <p class="card-text text-muted small">Items below reorder level with shortages</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0">
+                <small class="text-muted">Alert data • Exportable</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <a href="/Report/View?type=DeadStock" class="card shadow-sm text-decoration-none h-100" style="transition: all .2s ease;">
+            <div class="card-body d-flex align-items-start gap-3">
+                <div>
+                    <i class="bi bi-archive text-secondary" style="font-size:1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title">Dead Stock Report</h5>
+                    <p class="card-text text-muted small">Slow and non-moving inventory analysis</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0">
+                <small class="text-muted">Aging data • Value-based</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <a href="/Report/View?type=VendorPurchase" class="card shadow-sm text-decoration-none h-100" style="transition: all .2s ease;">
+            <div class="card-body d-flex align-items-start gap-3">
+                <div>
+                    <i class="bi bi-shop text-warning" style="font-size:1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title">Vendor Performance</h5>
+                    <p class="card-text text-muted small">Purchase history and vendor rankings</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0">
+                <small class="text-muted">Purchase data • Year-wise</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <a href="/Report/View?type=AbcAnalysis" class="card shadow-sm text-decoration-none h-100" style="transition: all .2s ease;">
+            <div class="card-body d-flex align-items-start gap-3">
+                <div>
+                    <i class="bi bi-graph-up-arrow text-primary" style="font-size:1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title">ABC Analysis</h5>
+                    <p class="card-text text-muted small">Value-based inventory classification</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0">
+                <small class="text-muted">SKU data • Pareto analysis</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <a href="/Report/View?type=ConsumptionAnalysis" class="card shadow-sm text-decoration-none h-100" style="transition: all .2s ease;">
+            <div class="card-body d-flex align-items-start gap-3">
+                <div>
+                    <i class="bi bi-graph-down-arrow text-info" style="font-size:1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title">Consumption Analysis</h5>
+                    <p class="card-text text-muted small">Department-wise material usage trends</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0">
+                <small class="text-muted">Issue data • Monthly trends</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <a href="/Report/View?type=InventoryValuation" class="card shadow-sm text-decoration-none h-100" style="transition: all .2s ease;">
+            <div class="card-body d-flex align-items-start gap-3">
+                <div>
+                    <i class="bi bi-cash-stack text-success" style="font-size:1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title">Inventory Valuation</h5>
+                    <p class="card-text text-muted small">Total stock value at weighted average cost</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0">
+                <small class="text-muted">Stock data • Cost-based</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <a href="/Report/View?type=SiteWiseStock" class="card shadow-sm text-decoration-none h-100" style="transition: all .2s ease;">
+            <div class="card-body d-flex align-items-start gap-3">
+                <div>
+                    <i class="bi bi-geo-alt text-danger" style="font-size:1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title">Site-wise Stock</h5>
+                    <p class="card-text text-muted small">Inventory distribution across locations</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0">
+                <small class="text-muted">Stock data • Location-wise</small>
+            </div>
+        </a>
+    </div>
+</div>

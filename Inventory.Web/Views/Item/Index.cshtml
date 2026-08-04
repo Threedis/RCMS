@@ -1,0 +1,162 @@
+@{
+    ViewData["Title"] = "Item Master";
+    ViewData["Icon"] = "bi-box-seam";
+    ViewData["Subtitle"] = "Every stock keeping unit, with its live balance and value";
+
+    var lookups = ViewData["Lookups"] as LookupBundle ?? new LookupBundle();
+    var canManage = User.IsInRole(Roles.Administrator) || User.IsInRole(Roles.InventoryManager);
+}
+
+@section PageActions {
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="excel">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+    </a>
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="pdf">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+    </a>
+    @if (canManage)
+    {
+        <a class="btn btn-outline-primary btn-sm" asp-action="Import">
+            <i class="bi bi-upload me-1"></i>Import
+        </a>
+        <a class="btn btn-primary btn-sm" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i>New Item
+        </a>
+    }
+}
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+                <label class="form-label small mb-1" for="filterCategory">Category</label>
+                <select class="form-select form-select-sm" id="filterCategory">
+                    <option value="">All categories</option>
+                    @foreach (var option in lookups.Categories)
+                    {
+                        <option value="@option.Id">@option.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label small mb-1" for="filterItemType">Item type</label>
+                <select class="form-select form-select-sm" id="filterItemType">
+                    <option value="">All types</option>
+                    @foreach (var option in FilterViewModel.ItemTypeOptions())
+                    {
+                        <option value="@option.Value">@option.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="filterLowStock" />
+                    <label class="form-check-label small" for="filterLowStock">Low stock only</label>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 text-end">
+                <button type="button" class="btn btn-sm btn-primary" id="applyItemFilter">
+                    <i class="bi bi-funnel me-1"></i>Apply
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body table-responsive-card">
+        <table class="table table-hover table-sm align-middle w-100" id="itemGrid">
+            <thead class="table-light">
+                <tr>
+                    <th>Code</th>
+                    <th>Item Name</th>
+                    <th class="d-none d-lg-table-cell">Part Number</th>
+                    <th class="d-none d-md-table-cell">Category</th>
+                    <th class="d-none d-lg-table-cell">Type</th>
+                    <th>UOM</th>
+                    <th class="text-end">Stock</th>
+                    <th class="text-end d-none d-md-table-cell">Reorder</th>
+                    <th class="text-end d-none d-lg-table-cell">Avg. Cost</th>
+                    <th class="text-end">Value</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const canManage = @canManage.ToString().ToLowerInvariant();
+
+            const grid = inv.grid('#itemGrid', {
+                url: '/Item/List',
+                data: function () {
+                    return {
+                        categoryId: $('#filterCategory').val() || '',
+                        itemType: $('#filterItemType').val() || '',
+                        lowStockOnly: $('#filterLowStock').is(':checked')
+                    };
+                },
+                columns: [
+                    { data: 'itemCode' },
+                    {
+                        data: 'itemName',
+                        render: function (value, type, row) {
+                            const low = row.isLowStock ? ' ' + inv.render.lowStock(true) : '';
+                            return inv.escape(value) + low;
+                        }
+                    },
+                    { data: 'partNumber', className: 'd-none d-lg-table-cell', render: inv.render.text },
+                    { data: 'categoryName', className: 'd-none d-md-table-cell', render: inv.render.text },
+                    { data: 'itemTypeName', className: 'd-none d-lg-table-cell', render: inv.render.text },
+                    { data: 'unitSymbol', render: inv.render.text },
+                    { data: 'currentStock', className: 'text-end', render: inv.format.quantity },
+                    { data: 'reorderLevel', className: 'text-end d-none d-md-table-cell', render: inv.format.quantity },
+                    { data: 'averageCost', className: 'text-end d-none d-lg-table-cell', render: inv.format.money },
+                    { data: 'stockValue', className: 'text-end', render: inv.format.money },
+                    { data: 'isActive', orderable: false, render: inv.render.status },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function (id) {
+                            let html = `<a class="btn btn-sm btn-link p-1" href="/Stock/Ledger?itemId=${id}"
+                                           title="Ledger"><i class="bi bi-journal-text"></i></a>`;
+                            if (canManage) {
+                                html += `<a class="btn btn-sm btn-link p-1" href="/Item/Edit/${id}"
+                                            title="Edit"><i class="bi bi-pencil"></i></a>
+                                         <button type="button" class="btn btn-sm btn-link p-1 text-danger js-delete"
+                                                 data-id="${id}" title="Delete"><i class="bi bi-trash"></i></button>`;
+                            }
+                            return html;
+                        }
+                    }
+                ],
+                order: [[1, 'asc']]
+            });
+
+            $('#applyItemFilter').on('click', () => grid.ajax.reload());
+
+            $('#itemGrid').on('click', '.js-delete', function () {
+                const id = $(this).data('id');
+
+                inv.confirm('Delete this item?',
+                    'An item with stock or transaction history cannot be deleted. Continue?')
+                    .then(function (ok) {
+                        if (!ok) { return; }
+
+                        inv.post('/Item/Delete', { id: id }).then(function (response) {
+                            inv.toast(response.message, response.success ? 'success' : 'danger');
+                            if (response.success) { grid.ajax.reload(null, false); }
+                        });
+                    });
+            });
+        })();
+    </script>
+}

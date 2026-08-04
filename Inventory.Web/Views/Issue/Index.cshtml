@@ -1,0 +1,156 @@
+@model MasterDto
+@{
+    ViewData["Title"] = "Material Issues";
+    ViewData["Icon"] = "bi-box-arrow-up";
+    ViewData["Subtitle"] = "Outward material and issue tracking";
+
+    var canApprove = User.IsInRole(Roles.Approver) || User.IsInRole(Roles.Administrator);
+    var canManage = User.IsInRole(Roles.InventoryManager) || User.IsInRole(Roles.Administrator);
+}
+
+@section PageActions {
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="excel">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+    </a>
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="pdf">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+    </a>
+    @if (canManage)
+    {
+        <button type="button" class="btn btn-primary btn-sm" id="btnCreate">
+            <i class="bi bi-plus-lg me-1"></i>New Issue
+        </button>
+    }
+}
+
+@Html.Partial("~/Views/Shared/_FilterPanel.cshtml",
+    new FilterViewModel { VisibleFilters = new[] { "dateRange", "department", "engineer", "warehouse", "status" } })
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover table-sm align-middle w-100" id="issueGrid">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:10rem;">Issue No.</th>
+                    <th>Issued To</th>
+                    <th class="d-none d-md-table-cell">Warehouse</th>
+                    <th class="text-end">Qty (lines)</th>
+                    <th class="text-end">Total Value</th>
+                    <th>Status</th>
+                    <th style="width:6rem;">Issued</th>
+                    <th class="text-end" style="width:8rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const canManage = @canManage.ToString().ToLowerInvariant();
+            const canApprove = @canApprove.ToString().ToLowerInvariant();
+
+            const grid = inv.grid('#issueGrid', {
+                url: '/Issue/List',
+                columns: [
+                    { data: 'issueNumber' },
+                    { data: 'issuedToName' },
+                    { data: 'warehouseName', className: 'd-none d-md-table-cell' },
+                    { data: 'lineCount', className: 'text-end', render: inv.render.integer },
+                    { data: 'totalValue', className: 'text-end', render: inv.render.money },
+                    { data: 'status', orderable: false, render: inv.render.documentStatus },
+                    {
+                        data: 'issueDate',
+                        orderable: false,
+                        render: function (date) {
+                            return date ? inv.render.date(date) : '<span class="text-muted">—</span>';
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function (id, type, row) {
+                            let actions = `<a href="/Issue/Details/${id}" class="btn btn-sm btn-link p-1" title="View"><i class="bi bi-eye"></i></a>`;
+                            if (canManage && (row.status === 'Draft' || row.status === 'Rejected')) {
+                                actions += ` <a href="/Issue/Edit/${id}" class="btn btn-sm btn-link p-1" title="Edit"><i class="bi bi-pencil"></i></a>`;
+                                actions += ` <button type="button" class="btn btn-sm btn-link p-1 text-danger js-delete" data-id="${id}" title="Delete"><i class="bi bi-trash"></i></button>`;
+                            }
+                            if (row.status === 'Draft' && canManage) {
+                                actions += ` <button type="button" class="btn btn-sm btn-link p-1 text-primary js-submit" data-id="${id}" title="Submit"><i class="bi bi-arrow-right"></i></button>`;
+                            }
+                            if (row.status === 'PendingApproval' && canApprove) {
+                                actions += ` <button type="button" class="btn btn-sm btn-link p-1 text-success js-approve" data-id="${id}" title="Approve"><i class="bi bi-check2"></i></button>`;
+                            }
+                            if (row.status === 'Approved' && canManage) {
+                                actions += ` <button type="button" class="btn btn-sm btn-link p-1 text-info js-dispatch" data-id="${id}" title="Dispatch"><i class="bi bi-truck"></i></button>`;
+                            }
+                            return actions;
+                        }
+                    }
+                ],
+                order: [[0, 'desc']]
+            });
+
+            $('#btnCreate').on('click', function () {
+                window.location.href = '/Issue/Create';
+            });
+
+            $('#issueGrid').on('click', '.js-submit', function () {
+                const id = $(this).data('id');
+                inv.confirm('Submit for approval?', 'Once submitted, the issue cannot be edited.')
+                    .then(ok => {
+                        if (!ok) return;
+                        inv.post('/Issue/Submit', { id }).then(response => {
+                            inv.toast(response.message, response.success ? 'success' : 'danger');
+                            if (response.success) grid.ajax.reload(null, false);
+                        });
+                    });
+            });
+
+            $('#issueGrid').on('click', '.js-approve', function () {
+                window.location.href = '/Issue/Details/' + $(this).data('id');
+            });
+
+            $('#issueGrid').on('click', '.js-dispatch', function () {
+                window.location.href = '/Issue/Details/' + $(this).data('id');
+            });
+
+            $('#issueGrid').on('click', '.js-delete', function () {
+                const id = $(this).data('id');
+                inv.confirm('Delete this issue?', 'The record will be soft-deleted for history.')
+                    .then(ok => {
+                        if (!ok) return;
+                        inv.post('/Issue/Delete', { id }).then(response => {
+                            inv.toast(response.message, response.success ? 'success' : 'danger');
+                            if (response.success) grid.ajax.reload(null, false);
+                        });
+                    });
+            });
+
+            // Filter apply
+            $('#filterApply').on('click', function () {
+                const filters = {
+                    fromDate: $('#filterFromDate').val(),
+                    toDate: $('#filterToDate').val(),
+                    departmentId: $('#filterDepartment').val(),
+                    engineerId: $('#filterEngineer').val(),
+                    warehouseId: $('#filterWarehouse').val(),
+                    status: $('#filterStatus').val()
+                };
+                grid.settings().ajax.data = function () { return filters; };
+                grid.ajax.reload();
+            });
+
+            $('#filterReset').on('click', function () {
+                $('#filterFromDate, #filterToDate, #filterDepartment, #filterEngineer, #filterWarehouse, #filterStatus').val('').trigger('change');
+                grid.settings().ajax.data = function () { return {}; };
+                grid.ajax.reload();
+            });
+        })();
+    </script>
+}

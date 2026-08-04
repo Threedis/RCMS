@@ -1,0 +1,84 @@
+@model MasterDto
+@{
+    ViewData["Title"] = "Approval Queue";
+    ViewData["Icon"] = "bi-hourglass-split";
+    ViewData["Subtitle"] = "Documents pending approval";
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover table-sm align-middle w-100" id="approvalGrid">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:10rem;">Document No.</th>
+                    <th>Type</th>
+                    <th class="d-none d-md-table-cell">Party</th>
+                    <th class="text-end">Value</th>
+                    <th style="width:5rem;">Days</th>
+                    <th style="width:6rem;">Age</th>
+                    <th class="text-end" style="width:8rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const grid = inv.grid('#approvalGrid', {
+                url: '/Approval/List',
+                columns: [
+                    { data: 'documentNumber' },
+                    {
+                        data: 'documentType',
+                        render: type => type === 'GoodsReceiptNote' ? '<span class="badge bg-primary">GRN</span>' : '<span class="badge bg-info">Issue</span>'
+                    },
+                    {
+                        data: 'partyName',
+                        className: 'd-none d-md-table-cell'
+                    },
+                    {
+                        data: 'totalValue',
+                        className: 'text-end',
+                        render: inv.render.money
+                    },
+                    {
+                        data: 'ageInDays',
+                        className: 'text-end'
+                    },
+                    {
+                        data: 'ageInDays',
+                        orderable: false,
+                        render: function (days) {
+                            if (days > 3) {
+                                return `<span class="badge bg-danger">${days}d</span>`;
+                            } else if (days > 1) {
+                                return `<span class="badge bg-warning">${days}d</span>`;
+                            }
+                            return `<span class="badge bg-secondary">${days}d</span>`;
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function (id, type, row) {
+                            const url = row.documentType === 'GoodsReceiptNote'
+                                ? `/Grn/Details/${id}`
+                                : `/Issue/Details/${id}`;
+                            return `
+                                <a href="${url}" class="btn btn-sm btn-link p-1" title="Review">
+                                    <i class="bi bi-arrow-right"></i>
+                                </a>`;
+                        }
+                    }
+                ],
+                order: [[4, 'desc']]
+            });
+        })();
+    </script>
+}

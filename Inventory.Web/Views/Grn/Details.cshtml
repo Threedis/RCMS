@@ -1,0 +1,212 @@
+@model DocumentFormViewModel<GrnDto>
+@{
+    ViewData["Title"] = $"GRN {Model.Document.GrnNumber}";
+    ViewData["Icon"] = "bi-box-arrow-in-down";
+
+    var canApprove = User.IsInRole(Roles.Approver) || User.IsInRole(Roles.Administrator);
+    var canManage = User.IsInRole(Roles.InventoryManager) || User.IsInRole(Roles.Administrator);
+    var isApprovalPending = Model.Document.Status == "PendingApproval";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="h5 mb-1">@Model.Document.GrnNumber</h2>
+                    <span class="badge @(Model.Document.Status == "Draft" ? "bg-secondary" : Model.Document.Status == "PendingApproval" ? "bg-warning" : Model.Document.Status == "Approved" ? "bg-success" : "bg-danger")">
+                        @Model.Document.Status
+                    </span>
+                </div>
+                <div class="d-flex gap-2">
+                    @if (canManage && (Model.Document.Status == "Draft" || Model.Document.Status == "Rejected"))
+                    {
+                        <a href="/Grn/Edit/@Model.Document.Id" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil me-1"></i>Edit
+                        </a>
+                    }
+                    <a href="/Grn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-chevron-left me-1"></i>Back</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">GRN Date</label>
+                        <div>@Model.Document.GrnDate.ToString("dd MMM yyyy")</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Reference No.</label>
+                        <div>@(Model.Document.ReferenceNumber ?? "—")</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Receipt Date</label>
+                        <div>@(Model.Document.ReceiptDate?.ToString("dd MMM yyyy") ?? "—")</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Total Value</label>
+                        <div class="h6">@Model.Document.TotalValue.ToMoney()</div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Vendor</label>
+                        <div>@Model.Document.VendorName</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Warehouse</label>
+                        <div>@Model.Document.WarehouseName</div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Document.Description))
+                    {
+                        <div class="col-12">
+                            <label class="form-label text-muted">Notes</label>
+                            <div>@Model.Document.Description</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 col-xl-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Line Items</h5>
+            </div>
+            <div class="table-responsive-card">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item Code</th>
+                            <th>Item Name</th>
+                            <th class="text-end">Qty</th>
+                            <th>UOM</th>
+                            <th class="text-end">Rate</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in Model.Document.Lines ?? new List<GrnLineDto>())
+                        {
+                            <tr>
+                                <td>@line.ItemCode</td>
+                                <td>@line.ItemName</td>
+                                <td class="text-end">@line.Quantity.ToQuantity()</td>
+                                <td>@line.UnitSymbol</td>
+                                <td class="text-end">@line.Rate.ToMoney()</td>
+                                <td class="text-end fw-semibold">@line.Amount.ToMoney()</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" class="text-end fw-semibold">Total</td>
+                            <td class="text-end fw-semibold">@Model.Document.TotalValue.ToMoney()</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+        @if (isApprovalPending && canApprove)
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Approval</h5>
+                </div>
+                <div class="card-body">
+                    <form id="approvalForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Id" value="@Model.Document.Id" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Decision</label>
+                            <div class="btn-group d-flex" role="group">
+                                <input type="radio" class="btn-check" name="Approved" id="approveYes" value="true" />
+                                <label class="btn btn-outline-success" for="approveYes">
+                                    <i class="bi bi-check2"></i> Approve
+                                </label>
+                                <input type="radio" class="btn-check" name="Approved" id="approveNo" value="false" />
+                                <label class="btn btn-outline-danger" for="approveNo">
+                                    <i class="bi bi-x-lg"></i> Reject
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="commentSection" style="display:none;">
+                            <label class="form-label" for="ApprovalComments">Comments</label>
+                            <textarea class="form-control" id="ApprovalComments" name="ApprovalComments"
+                                      rows="3" maxlength="500"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Submit Decision</button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Audit Trail</h5>
+            </div>
+            <div class="card-body">
+                <ul class="timeline">
+                    @foreach (var audit in Model.Document.AuditTrail ?? new List<AuditEntry>())
+                    {
+                        <li class="timeline-item">
+                            <div class="timeline-marker">
+                                <i class="bi @(audit.Action == "Created" ? "bi-file-earmark-plus" : audit.Action == "Approved" ? "bi-check2" : audit.Action == "Rejected" ? "bi-x-lg" : "bi-pencil")"></i>
+                            </div>
+                            <div class="fw-semibold">@audit.Action</div>
+                            <div class="text-muted small">@audit.UserName · @audit.ChangedOn.ToDisplayDateTime()</div>
+                            @if (!string.IsNullOrWhiteSpace(audit.Remarks))
+                            {
+                                <div class="small mt-1">@audit.Remarks</div>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            $('#approveYes, #approveNo').on('change', function () {
+                const isRejecting = $('#approveNo').is(':checked');
+                $('#commentSection').toggle(isRejecting);
+                if (isRejecting) $('#ApprovalComments').focus();
+            });
+
+            $('#approvalForm').on('submit', function (e) {
+                e.preventDefault();
+
+                if (!$('input[name="Approved"]:checked').val()) {
+                    inv.toast('Please select a decision.', 'danger');
+                    return;
+                }
+
+                if ($('#approveNo').is(':checked') && !$('#ApprovalComments').val().trim()) {
+                    inv.toast('Please provide rejection comments.', 'danger');
+                    return;
+                }
+
+                inv.postForm('/Grn/Approve', $(this)).then(response => {
+                    inv.toast(response.message, response.success ? 'success' : 'danger');
+                    if (response.success) {
+                        setTimeout(() => window.location.href = '/Approval', 500);
+                    }
+                });
+            });
+        })();
+    </script>
+}

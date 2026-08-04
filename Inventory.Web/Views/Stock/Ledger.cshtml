@@ -1,0 +1,131 @@
+@model MasterDto
+@{
+    ViewData["Title"] = "Stock Ledger";
+    ViewData["Icon"] = "bi-journal-text";
+    ViewData["Subtitle"] = "Transaction history and stock movements";
+}
+
+@section PageActions {
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="excel">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+    </a>
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="pdf">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+    </a>
+}
+
+@Html.Partial("~/Views/Shared/_FilterPanel.cshtml",
+    new FilterViewModel { VisibleFilters = new[] { "dateRange", "warehouse", "category" } })
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover table-sm align-middle w-100" id="ledgerGrid">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:8rem;">Date</th>
+                    <th style="width:10rem;">Reference</th>
+                    <th>Item Code</th>
+                    <th>Item Name</th>
+                    <th class="d-none d-lg-table-cell">Warehouse</th>
+                    <th>Type</th>
+                    <th class="text-end">In Qty</th>
+                    <th class="text-end">Out Qty</th>
+                    <th class="text-end">Balance Qty</th>
+                    <th style="width:5rem;">UOM</th>
+                    <th class="text-end">Unit Rate</th>
+                    <th class="text-end">Value</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const grid = inv.grid('#ledgerGrid', {
+                url: '/Stock/LedgerList',
+                columns: [
+                    {
+                        data: 'transactionDate',
+                        render: inv.render.date
+                    },
+                    {
+                        data: 'referenceNumber'
+                    },
+                    {
+                        data: 'itemCode'
+                    },
+                    {
+                        data: 'itemName'
+                    },
+                    {
+                        data: 'warehouseName',
+                        className: 'd-none d-lg-table-cell'
+                    },
+                    {
+                        data: 'transactionType',
+                        render: type => {
+                            const types = {
+                                'Inward': '<span class="badge bg-success">Inward</span>',
+                                'Outward': '<span class="badge bg-danger">Outward</span>',
+                                'Adjustment': '<span class="badge bg-warning">Adjustment</span>'
+                            };
+                            return types[type] || type;
+                        }
+                    },
+                    {
+                        data: 'inQuantity',
+                        className: 'text-end',
+                        render: inv.render.quantity
+                    },
+                    {
+                        data: 'outQuantity',
+                        className: 'text-end',
+                        render: inv.render.quantity
+                    },
+                    {
+                        data: 'balanceQuantity',
+                        className: 'text-end',
+                        render: inv.render.quantity
+                    },
+                    {
+                        data: 'unitSymbol'
+                    },
+                    {
+                        data: 'unitRate',
+                        className: 'text-end',
+                        render: inv.render.money
+                    },
+                    {
+                        data: 'transactionValue',
+                        className: 'text-end fw-semibold',
+                        render: inv.render.money
+                    }
+                ],
+                order: [[0, 'desc']]
+            });
+
+            // Filter apply
+            $('#filterApply').on('click', function () {
+                const filters = {
+                    fromDate: $('#filterFromDate').val(),
+                    toDate: $('#filterToDate').val(),
+                    warehouseId: $('#filterWarehouse').val(),
+                    categoryId: $('#filterCategory').val()
+                };
+                grid.settings().ajax.data = function () { return filters; };
+                grid.ajax.reload();
+            });
+
+            $('#filterReset').on('click', function () {
+                $('#filterFromDate, #filterToDate, #filterWarehouse, #filterCategory').val('').trigger('change');
+                grid.settings().ajax.data = function () { return {}; };
+                grid.ajax.reload();
+            });
+        })();
+    </script>
+}

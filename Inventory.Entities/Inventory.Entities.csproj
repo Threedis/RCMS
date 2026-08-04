@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Inventory.Entities</RootNamespace>
+    <AssemblyName>Inventory.Entities</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Identity.Stores brings IdentityUser<TKey>/IdentityRole<TKey> so the
+      domain user aggregate can inherit from ASP.NET Core Identity without the
+      entity project taking a dependency on the web stack.
+    -->
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="8.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inventory.Common\Inventory.Common.csproj" />
+  </ItemGroup>
+
+</Project>

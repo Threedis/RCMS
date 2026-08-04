@@ -1,0 +1,219 @@
+@model MasterDto
+@*
+    One grid + modal form serving Category, Unit, Department, Site, Warehouse,
+    Manufacturer, Courier and Engineer. The controller supplies the labels and
+    the name of the partial that renders the master-specific fields.
+*@
+@{
+    var entity = ViewData["EntityName"] as string ?? "Record";
+    var entityPlural = ViewData["EntityNamePlural"] as string ?? entity + "s";
+    var controller = ViewData["Controller"] as string ?? string.Empty;
+    var fieldsPartial = ViewData["FieldsPartial"] as string;
+
+    ViewData["Title"] = entityPlural;
+    ViewData["Icon"] = ViewData["Icon"] as string ?? "bi-list-ul";
+    ViewData["Subtitle"] = $"Maintain the {entityPlural.ToLowerInvariant()} used across the application";
+
+    var canManage = User.IsInRole(Roles.Administrator) || User.IsInRole(Roles.InventoryManager);
+}
+
+@section PageActions {
+    <a class="btn btn-outline-secondary btn-sm"
+       asp-controller="@controller" asp-action="Export" asp-route-format="excel">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+    </a>
+    <a class="btn btn-outline-secondary btn-sm"
+       asp-controller="@controller" asp-action="Export" asp-route-format="pdf">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+    </a>
+    @if (canManage)
+    {
+        <button type="button" class="btn btn-primary btn-sm" id="btnAdd">
+            <i class="bi bi-plus-lg me-1"></i>New @entity
+        </button>
+    }
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover table-sm align-middle w-100" id="masterGrid">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:10rem;">Code</th>
+                    <th>Name</th>
+                    <th class="d-none d-md-table-cell">Description</th>
+                    <th class="text-end" style="width:6rem;">Order</th>
+                    <th style="width:6rem;">Status</th>
+                    <th class="text-end" style="width:8rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@* ---- Create / edit modal ------------------------------------------------ *@
+<div class="modal fade" id="masterModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form id="masterForm" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="Id" value="0" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="masterModalTitle">New @entity</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="Code">Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="Code" name="Code" maxlength="30" required
+                                   data-remote-url="@Url.Action("IsCodeAvailable", controller)" />
+                            <div class="form-text">Leave blank to generate one automatically.</div>
+                            <div class="invalid-feedback" data-valmsg-for="Code"></div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label" for="Name">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="Name" name="Name" maxlength="150" required />
+                            <div class="invalid-feedback" data-valmsg-for="Name"></div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label" for="Description">Description</label>
+                            <textarea class="form-control" id="Description" name="Description"
+                                      rows="2" maxlength="500"></textarea>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(fieldsPartial))
+                        {
+                            <partial name="@fieldsPartial" />
+                        }
+
+                        <div class="col-md-4">
+                            <label class="form-label" for="DisplayOrder">Display Order</label>
+                            <input type="number" class="form-control" id="DisplayOrder" name="DisplayOrder"
+                                   value="0" min="0" max="9999" />
+                        </div>
+
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="IsActive" name="IsActive"
+                                       value="true" checked />
+                                <input type="hidden" name="IsActive" value="false" />
+                                <label class="form-check-label" for="IsActive">Active</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger mt-3 d-none" id="masterFormErrors"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSave">
+                        <i class="bi bi-save me-1"></i>Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const controller = '@controller';
+            const entity = '@entity';
+            const canManage = @canManage.ToString().ToLowerInvariant();
+
+            const grid = inv.grid('#masterGrid', {
+                url: `/${controller}/List`,
+                columns: [
+                    { data: 'code' },
+                    { data: 'name' },
+                    { data: 'description', className: 'd-none d-md-table-cell', render: inv.render.text },
+                    { data: 'displayOrder', className: 'text-end' },
+                    { data: 'isActive', orderable: false, render: inv.render.status },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function (id) {
+                            if (!canManage) { return ''; }
+                            return `
+                                <button type="button" class="btn btn-sm btn-link p-1 js-edit" data-id="${id}"
+                                        title="Edit"><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="btn btn-sm btn-link p-1 text-danger js-delete" data-id="${id}"
+                                        title="Delete"><i class="bi bi-trash"></i></button>`;
+                        }
+                    }
+                ],
+                order: [[1, 'asc']]
+            });
+
+            const modal = new bootstrap.Modal('#masterModal');
+            const $form = $('#masterForm');
+
+            function resetForm() {
+                $form[0].reset();
+                $('#Id').val(0);
+                $('#masterFormErrors').addClass('d-none').empty();
+                inv.clearValidation($form);
+            }
+
+            $('#btnAdd').on('click', function () {
+                resetForm();
+                $('#masterModalTitle').text('New ' + entity);
+                modal.show();
+            });
+
+            $('#masterGrid').on('click', '.js-edit', function () {
+                const id = $(this).data('id');
+                resetForm();
+
+                inv.get(`/${controller}/Get`, { id: id }).then(function (response) {
+                    if (!response.success) { inv.toast(response.message, 'danger'); return; }
+                    inv.fillForm($form, response.data);
+                    $('#masterModalTitle').text('Edit ' + entity);
+                    modal.show();
+                });
+            });
+
+            $('#masterGrid').on('click', '.js-delete', function () {
+                const id = $(this).data('id');
+
+                inv.confirm(`Delete this ${entity.toLowerCase()}?`,
+                    'The record is deactivated and kept for history. Continue?')
+                    .then(function (ok) {
+                        if (!ok) { return; }
+
+                        inv.post(`/${controller}/Delete`, { id: id }).then(function (response) {
+                            inv.toast(response.message, response.success ? 'success' : 'danger');
+                            if (response.success) { grid.ajax.reload(null, false); }
+                        });
+                    });
+            });
+
+            $form.on('submit', function (event) {
+                event.preventDefault();
+
+                if (!inv.validateForm($form)) { return; }
+
+                inv.postForm(`/${controller}/Save`, $form).then(function (response) {
+                    if (response.success) {
+                        modal.hide();
+                        inv.toast(response.message, 'success');
+                        grid.ajax.reload(null, false);
+                    } else {
+                        inv.showErrors($form, response, '#masterFormErrors');
+                    }
+                });
+            });
+        })();
+    </script>
+}

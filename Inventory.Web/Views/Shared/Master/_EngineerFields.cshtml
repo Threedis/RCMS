@@ -1,0 +1,40 @@
+@{
+    var lookups = ViewData["Lookups"] as LookupBundle ?? new LookupBundle();
+}
+<div class="col-md-4">
+    <label class="form-label" for="EmployeeCode">Employee Code</label>
+    <input type="text" class="form-control" id="EmployeeCode" name="EmployeeCode" maxlength="30" />
+</div>
+<div class="col-md-4">
+    <label class="form-label" for="DepartmentId">Department</label>
+    <select class="form-select" id="DepartmentId" name="DepartmentId">
+        <option value="">Not assigned</option>
+        @foreach (var option in lookups.Departments)
+        {
+            <option value="@option.Id">@option.Text</option>
+        }
+    </select>
+</div>
+<div class="col-md-4">
+    <label class="form-label" for="SiteId">Site</label>
+    <select class="form-select" id="SiteId" name="SiteId">
+        <option value="">Not assigned</option>
+        @foreach (var option in lookups.Sites)
+        {
+            <option value="@option.Id">@option.Text</option>
+        }
+    </select>
+</div>
+<div class="col-md-4">
+    <label class="form-label" for="Designation">Designation</label>
+    <input type="text" class="form-control" id="Designation" name="Designation" maxlength="150" />
+</div>
+<div class="col-md-4">
+    <label class="form-label" for="Email">E-mail</label>
+    <input type="email" class="form-control" id="Email" name="Email" maxlength="150" />
+    <div class="invalid-feedback" data-valmsg-for="Email"></div>
+</div>
+<div class="col-md-4">
+    <label class="form-label" for="MobileNumber">Mobile Number</label>
+    <input type="tel" class="form-control" id="MobileNumber" name="MobileNumber" maxlength="20" />
+</div>

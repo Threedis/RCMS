@@ -1,0 +1,256 @@
+@model MasterDto
+@{
+    ViewData["Title"] = "User Administration";
+    ViewData["Icon"] = "bi-people";
+    ViewData["Subtitle"] = "Manage system users and roles";
+
+    var isAdmin = User.IsInRole(Roles.Administrator);
+}
+
+@section PageActions {
+    @if (isAdmin)
+    {
+        <button type="button" class="btn btn-primary btn-sm" id="btnAddUser">
+            <i class="bi bi-plus-lg me-1"></i>New User
+        </button>
+    }
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover table-sm align-middle w-100" id="userGrid">
+            <thead class="table-light">
+                <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th class="d-none d-md-table-cell">Roles</th>
+                    <th>Status</th>
+                    <th class="d-none d-md-table-cell">Last Login</th>
+                    <th class="text-end" style="width:8rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@* Create / Edit Modal *@
+<div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form id="userForm" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="UserId" value="0" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalTitle">New User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="UserName">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="UserName" name="UserName" maxlength="50" required />
+                            <div class="invalid-feedback" data-valmsg-for="UserName"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="Email">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="Email" name="Email" maxlength="150" required />
+                            <div class="invalid-feedback" data-valmsg-for="Email"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="FullName">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="FullName" name="FullName" maxlength="150" required />
+                            <div class="invalid-feedback" data-valmsg-for="FullName"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="EmployeeCode">Employee Code</label>
+                            <input type="text" class="form-control" id="EmployeeCode" name="EmployeeCode" maxlength="20" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Roles <span class="text-danger">*</span></label>
+                            <div id="rolesContainer"></div>
+                            <div class="invalid-feedback d-block" id="rolesError"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="DepartmentId">Department</label>
+                            <select class="form-select" id="DepartmentId" name="DepartmentId">
+                                <option value="">— Select —</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check form-switch w-100">
+                                <input class="form-check-input" type="checkbox" id="IsActive" name="IsActive"
+                                       value="true" checked />
+                                <input type="hidden" name="IsActive" value="false" />
+                                <label class="form-check-label" for="IsActive">Active</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger mt-3 d-none" id="userFormErrors"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSave">
+                        <i class="bi bi-save me-1"></i>Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const isAdmin = @isAdmin.ToString().ToLowerInvariant();
+
+            const grid = inv.grid('#userGrid', {
+                url: '/User/List',
+                columns: [
+                    { data: 'username' },
+                    { data: 'fullName' },
+                    { data: 'email' },
+                    {
+                        data: 'roles',
+                        className: 'd-none d-md-table-cell',
+                        render: roles => roles?.map(r => `<span class="badge bg-secondary">${r}</span>`).join(' ') || '—'
+                    },
+                    { data: 'isActive', orderable: false, render: inv.render.status },
+                    {
+                        data: 'lastLoginOn',
+                        className: 'd-none d-md-table-cell',
+                        render: date => date ? inv.render.date(date) : '<span class="text-muted">Never</span>'
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function (id) {
+                            if (!isAdmin) return '—';
+                            return `
+                                <button type="button" class="btn btn-sm btn-link p-1 js-edit" data-id="${id}"
+                                        title="Edit"><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="btn btn-sm btn-link p-1 js-reset-pwd" data-id="${id}"
+                                        title="Reset Password"><i class="bi bi-key"></i></button>
+                                <button type="button" class="btn btn-sm btn-link p-1 text-danger js-deactivate" data-id="${id}"
+                                        title="Deactivate"><i class="bi bi-lock"></i></button>`;
+                        }
+                    }
+                ],
+                order: [[0, 'asc']]
+            });
+
+            const modal = new bootstrap.Modal('#userModal');
+            const $form = $('#userForm');
+            let departments = [];
+
+            inv.get('/Home/GetDepartments').then(response => {
+                if (response.success) {
+                    departments = response.data;
+                    const $select = $('#DepartmentId');
+                    response.data.forEach(d => {
+                        $select.append(`<option value="${d.id}">${d.name}</option>`);
+                    });
+                }
+            });
+
+            function resetForm() {
+                $form[0].reset();
+                $('#UserId').val(0);
+                $('#userFormErrors').addClass('d-none').empty();
+                inv.clearValidation($form);
+                renderRoles([]);
+            }
+
+            function renderRoles(selectedRoles = []) {
+                const roles = ['Administrator', 'InventoryManager', 'StoreExecutive', 'Approver', 'ProjectManager', 'Viewer'];
+                const html = roles.map(role => `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="Roles" value="${role}" id="role${role}"
+                               ${selectedRoles.includes(role) ? 'checked' : ''} />
+                        <label class="form-check-label" for="role${role}">${role}</label>
+                    </div>`).join('');
+                $('#rolesContainer').html(html);
+            }
+
+            $('#btnAddUser').on('click', function () {
+                resetForm();
+                $('#userModalTitle').text('New User');
+                modal.show();
+            });
+
+            $('#userGrid').on('click', '.js-edit', function () {
+                const id = $(this).data('id');
+                resetForm();
+
+                inv.get('/User/Get', { id }).then(response => {
+                    if (!response.success) { inv.toast(response.message, 'danger'); return; }
+                    const user = response.data;
+                    inv.fillForm($form, user);
+                    renderRoles(user.roles || []);
+                    $('#userModalTitle').text(`Edit ${user.fullName}`);
+                    modal.show();
+                });
+            });
+
+            $('#userGrid').on('click', '.js-reset-pwd', function () {
+                const id = $(this).data('id');
+                inv.confirm('Reset password?', 'User will receive a temporary password via email.')
+                    .then(ok => {
+                        if (!ok) return;
+                        inv.post('/User/ResetPassword', { id }).then(response => {
+                            inv.toast(response.message, response.success ? 'success' : 'danger');
+                            if (response.success) grid.ajax.reload(null, false);
+                        });
+                    });
+            });
+
+            $('#userGrid').on('click', '.js-deactivate', function () {
+                const id = $(this).data('id');
+                inv.confirm('Deactivate user?', 'User will no longer be able to login.')
+                    .then(ok => {
+                        if (!ok) return;
+                        inv.post('/User/Deactivate', { id }).then(response => {
+                            inv.toast(response.message, response.success ? 'success' : 'danger');
+                            if (response.success) grid.ajax.reload(null, false);
+                        });
+                    });
+            });
+
+            $form.on('submit', function (e) {
+                e.preventDefault();
+
+                if (!inv.validateForm($form)) return;
+
+                const selectedRoles = $('input[name="Roles"]:checked').map((i, el) => $(el).val()).get();
+                if (selectedRoles.length === 0) {
+                    $('#rolesError').text('Select at least one role.').show();
+                    return;
+                }
+
+                inv.postForm('/User/Save', $form).then(response => {
+                    if (response.success) {
+                        modal.hide();
+                        inv.toast(response.message, 'success');
+                        grid.ajax.reload(null, false);
+                    } else {
+                        inv.showErrors($form, response, '#userFormErrors');
+                    }
+                });
+            });
+        })();
+    </script>
+}

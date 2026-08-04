@@ -1,0 +1,39 @@
+<Project>
+
+  <!--
+    Solution-wide build settings.
+    Keeping these in one place guarantees every project targets the same
+    framework, language version and analyser rule-set (Microsoft enterprise standard).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <Company>Threedis</Company>
+    <Product>Enterprise Inventory Management System</Product>
+    <Version>1.0.0</Version>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <!--
+      1591 : missing XML comment for publicly visible type or member.
+             Documentation is enforced by review, not by the compiler, so the
+             build is not broken by an undocumented DTO property.
+      1998 : async method lacks await  (interface-mandated async signatures).
+    -->
+    <NoWarn>$(NoWarn);1591;1998;CA1848;CA2007</NoWarn>
+  </PropertyGroup>
+
+  <!-- Central package versions: every project references the same build. -->
+  <PropertyGroup>
+    <EfCoreVersion>8.0.11</EfCoreVersion>
+    <SerilogAspNetCoreVersion>8.0.3</SerilogAspNetCoreVersion>
+    <AutoMapperVersion>12.0.1</AutoMapperVersion>
+    <DapperVersion>2.1.35</DapperVersion>
+    <ClosedXmlVersion>0.104.2</ClosedXmlVersion>
+    <QuestPdfVersion>2024.12.3</QuestPdfVersion>
+  </PropertyGroup>
+
+</Project>

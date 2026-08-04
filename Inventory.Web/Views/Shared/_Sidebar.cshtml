@@ -1,0 +1,144 @@
+@model string
+@using Microsoft.Extensions.Options
+@using Inventory.Common.Configuration
+@inject IOptions<ApplicationSettings> AppSettings
+@{
+    // The active item is highlighted from the current controller name, so a link
+    // never has to declare its own "is current" flag.
+    string Active(params string[] controllers) =>
+        controllers.Contains(Model, StringComparer.OrdinalIgnoreCase) ? "active" : string.Empty;
+
+    var canManageMasters = User.IsInRole(Roles.Administrator) || User.IsInRole(Roles.InventoryManager);
+    var canTransact = canManageMasters || User.IsInRole(Roles.StoreExecutive);
+    var canApprove = User.IsInRole(Roles.Administrator)
+                     || User.IsInRole(Roles.InventoryManager)
+                     || User.IsInRole(Roles.Approver);
+    var isAdmin = User.IsInRole(Roles.Administrator);
+}
+
+<aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-brand">
+        <a asp-controller="Dashboard" asp-action="Index" class="d-flex align-items-center gap-2">
+            <i class="bi bi-boxes fs-4"></i>
+            <span class="brand-text">@AppSettings.Value.CompanyName</span>
+        </a>
+        <button class="btn btn-sm btn-link text-white d-lg-none" id="sidebarClose" aria-label="Close menu">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Main navigation">
+        <ul class="nav flex-column">
+
+            <li class="nav-item">
+                <a class="nav-link @Active("Dashboard")" asp-controller="Dashboard" asp-action="Index">
+                    <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+                </a>
+            </li>
+
+            @if (canTransact)
+            {
+                <li class="nav-section">Transactions</li>
+
+                <li class="nav-item">
+                    <a class="nav-link @Active("Grn")" asp-controller="Grn" asp-action="Index">
+                        <i class="bi bi-box-arrow-in-down"></i><span>Goods Receipt</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @Active("Issue")" asp-controller="Issue" asp-action="Index">
+                        <i class="bi bi-box-arrow-up"></i><span>Material Issue</span>
+                    </a>
+                </li>
+            }
+
+            @if (canApprove)
+            {
+                <li class="nav-item">
+                    <a class="nav-link @Active("Approval")" asp-controller="Approval" asp-action="Index">
+                        <i class="bi bi-check2-square"></i><span>Approvals</span>
+                        <span class="badge bg-warning text-dark ms-auto d-none" id="sidebarApprovalCount">0</span>
+                    </a>
+                </li>
+            }
+
+            <li class="nav-section">Inventory</li>
+
+            <li class="nav-item">
+                <a class="nav-link @Active("Stock")" asp-controller="Stock" asp-action="Index">
+                    <i class="bi bi-boxes"></i><span>Current Stock</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Stock" asp-action="Ledger">
+                    <i class="bi bi-journal-text"></i><span>Stock Ledger</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @Active("Report")" asp-controller="Report" asp-action="Index">
+                    <i class="bi bi-file-earmark-bar-graph"></i><span>Reports</span>
+                </a>
+            </li>
+
+            <li class="nav-section">Master Data</li>
+
+            <li class="nav-item">
+                <a class="nav-link @Active("Item")" asp-controller="Item" asp-action="Index">
+                    <i class="bi bi-box-seam"></i><span>Items</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @Active("Vendor")" asp-controller="Vendor" asp-action="Index">
+                    <i class="bi bi-truck"></i><span>Vendors</span>
+                </a>
+            </li>
+
+            @if (canManageMasters)
+            {
+                <li class="nav-item">
+                    <a class="nav-link collapsed d-flex align-items-center" data-bs-toggle="collapse"
+                       href="#masterSubmenu" role="button" aria-expanded="false" aria-controls="masterSubmenu">
+                        <i class="bi bi-list-ul"></i><span>Other Masters</span>
+                        <i class="bi bi-chevron-down ms-auto small"></i>
+                    </a>
+                    <div class="collapse @(new[] { "Category", "Unit", "Department", "Site", "Warehouse", "Manufacturer", "Courier", "Engineer" }.Contains(Model, StringComparer.OrdinalIgnoreCase) ? "show" : "")"
+                         id="masterSubmenu">
+                        <ul class="nav flex-column sub-nav">
+                            <li><a class="nav-link @Active("Category")" asp-controller="Category" asp-action="Index">Categories</a></li>
+                            <li><a class="nav-link @Active("Unit")" asp-controller="Unit" asp-action="Index">Units</a></li>
+                            <li><a class="nav-link @Active("Manufacturer")" asp-controller="Manufacturer" asp-action="Index">Manufacturers</a></li>
+                            <li><a class="nav-link @Active("Site")" asp-controller="Site" asp-action="Index">Sites</a></li>
+                            <li><a class="nav-link @Active("Warehouse")" asp-controller="Warehouse" asp-action="Index">Warehouses</a></li>
+                            <li><a class="nav-link @Active("Department")" asp-controller="Department" asp-action="Index">Departments</a></li>
+                            <li><a class="nav-link @Active("Engineer")" asp-controller="Engineer" asp-action="Index">Engineers</a></li>
+                            <li><a class="nav-link @Active("Courier")" asp-controller="Courier" asp-action="Index">Couriers</a></li>
+                        </ul>
+                    </div>
+                </li>
+            }
+
+            @if (isAdmin)
+            {
+                <li class="nav-section">Administration</li>
+
+                <li class="nav-item">
+                    <a class="nav-link @Active("User")" asp-controller="User" asp-action="Index">
+                        <i class="bi bi-people"></i><span>Users</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @Active("Audit")" asp-controller="Audit" asp-action="Index">
+                        <i class="bi bi-shield-check"></i><span>Audit Trail</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Audit" asp-action="LoginHistory">
+                        <i class="bi bi-door-open"></i><span>Login History</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </nav>
+</aside>
+
+<div class="sidebar-backdrop d-lg-none" id="sidebarBackdrop"></div>

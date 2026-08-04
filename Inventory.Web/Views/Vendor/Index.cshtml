@@ -1,0 +1,155 @@
+@{
+    ViewData["Title"] = "Vendor Master";
+    ViewData["Icon"] = "bi-truck";
+    ViewData["Subtitle"] = "Suppliers, their statutory identifiers and their supply history";
+
+    var canManage = User.IsInRole(Roles.Administrator) || User.IsInRole(Roles.InventoryManager);
+}
+
+@section PageActions {
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="excel">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+    </a>
+    @if (canManage)
+    {
+        <button type="button" class="btn btn-primary btn-sm" id="btnAdd">
+            <i class="bi bi-plus-lg me-1"></i>New Vendor
+        </button>
+    }
+}
+
+<div class="card shadow-sm">
+    <div class="card-body table-responsive-card">
+        <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="filterBlacklisted" />
+            <label class="form-check-label small" for="filterBlacklisted">Show blacklisted vendors only</label>
+        </div>
+
+        <table class="table table-hover table-sm align-middle w-100" id="vendorGrid">
+            <thead class="table-light">
+                <tr>
+                    <th>Code</th>
+                    <th>Vendor Name</th>
+                    <th class="d-none d-lg-table-cell">Contact</th>
+                    <th class="d-none d-lg-table-cell">Phone</th>
+                    <th class="d-none d-md-table-cell">City</th>
+                    <th class="d-none d-lg-table-cell">GSTIN</th>
+                    <th class="text-end d-none d-md-table-cell">Credit</th>
+                    <th class="text-end">GRNs</th>
+                    <th class="text-end">Purchase Value</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<partial name="_VendorModal" />
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const canManage = @canManage.ToString().ToLowerInvariant();
+
+            const grid = inv.grid('#vendorGrid', {
+                url: '/Vendor/List',
+                data: () => ({ blacklistedOnly: $('#filterBlacklisted').is(':checked') || '' }),
+                columns: [
+                    { data: 'code' },
+                    { data: 'name' },
+                    { data: 'contactPerson', className: 'd-none d-lg-table-cell', render: inv.render.text },
+                    { data: 'contactNumber', className: 'd-none d-lg-table-cell', render: inv.render.text },
+                    { data: 'city', className: 'd-none d-md-table-cell', render: inv.render.text },
+                    { data: 'gstNumber', className: 'd-none d-lg-table-cell', render: inv.render.text },
+                    { data: 'creditDays', className: 'text-end d-none d-md-table-cell', render: inv.render.text },
+                    { data: 'totalReceipts', className: 'text-end', render: inv.format.integer },
+                    { data: 'totalPurchaseValue', className: 'text-end', render: inv.format.money },
+                    {
+                        data: 'isBlacklisted',
+                        orderable: false,
+                        render: function (blacklisted, type, row) {
+                            if (blacklisted) {
+                                return '<span class="badge bg-danger-subtle text-danger-emphasis">Blacklisted</span>';
+                            }
+                            return inv.render.status(row.isActive);
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function (id) {
+                            if (!canManage) { return ''; }
+                            return `<button type="button" class="btn btn-sm btn-link p-1 js-edit" data-id="${id}"
+                                            title="Edit"><i class="bi bi-pencil"></i></button>
+                                    <button type="button" class="btn btn-sm btn-link p-1 text-danger js-delete" data-id="${id}"
+                                            title="Delete"><i class="bi bi-trash"></i></button>`;
+                        }
+                    }
+                ],
+                order: [[1, 'asc']]
+            });
+
+            $('#filterBlacklisted').on('change', () => grid.ajax.reload());
+
+            const modal = new bootstrap.Modal('#vendorModal');
+            const $form = $('#vendorForm');
+
+            function reset() {
+                $form[0].reset();
+                $('#Id').val(0);
+                $('#vendorFormErrors').addClass('d-none').empty();
+                inv.clearValidation($form);
+            }
+
+            $('#btnAdd').on('click', function () {
+                reset();
+                $('#vendorModalTitle').text('New Vendor');
+                modal.show();
+            });
+
+            $('#vendorGrid').on('click', '.js-edit', function () {
+                reset();
+                inv.get('/Vendor/Get', { id: $(this).data('id') }).then(function (response) {
+                    if (!response.success) { inv.toast(response.message, 'danger'); return; }
+                    inv.fillForm($form, response.data);
+                    $('#vendorModalTitle').text('Edit Vendor');
+                    modal.show();
+                });
+            });
+
+            $('#vendorGrid').on('click', '.js-delete', function () {
+                const id = $(this).data('id');
+
+                inv.confirm('Delete this vendor?',
+                    'A vendor with goods receipt notes cannot be deleted; blacklist it instead. Continue?')
+                    .then(function (ok) {
+                        if (!ok) { return; }
+                        inv.post('/Vendor/Delete', { id: id }).then(function (response) {
+                            inv.toast(response.message, response.success ? 'success' : 'danger');
+                            if (response.success) { grid.ajax.reload(null, false); }
+                        });
+                    });
+            });
+
+            $form.on('submit', function (event) {
+                event.preventDefault();
+                if (!inv.validateForm($form)) { return; }
+
+                inv.postForm('/Vendor/Save', $form).then(function (response) {
+                    if (response.success) {
+                        modal.hide();
+                        inv.toast(response.message, 'success');
+                        grid.ajax.reload(null, false);
+                    } else {
+                        inv.showErrors($form, response, '#vendorFormErrors');
+                    }
+                });
+            });
+        })();
+    </script>
+}

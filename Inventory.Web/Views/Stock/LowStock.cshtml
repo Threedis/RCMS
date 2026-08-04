@@ -1,0 +1,103 @@
+@model MasterDto
+@{
+    ViewData["Title"] = "Low Stock Items";
+    ViewData["Icon"] = "bi-exclamation-triangle";
+    ViewData["Subtitle"] = "Items below reorder level";
+}
+
+@section PageActions {
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="excel">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+    </a>
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="pdf">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+    </a>
+}
+
+@Html.Partial("~/Views/Shared/_FilterPanel.cshtml",
+    new FilterViewModel { VisibleFilters = new[] { "category", "warehouse" } })
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover table-sm align-middle w-100" id="lowStockGrid">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:8rem;">Item Code</th>
+                    <th>Item Name</th>
+                    <th>Category</th>
+                    <th>Warehouse</th>
+                    <th class="text-end" style="width:7rem;">Current Qty</th>
+                    <th class="text-end" style="width:7rem;">Reorder Level</th>
+                    <th class="text-end" style="width:7rem;">Shortage</th>
+                    <th style="width:5rem;">UOM</th>
+                    <th class="text-end" style="width:7rem;">Unit Cost</th>
+                    <th class="text-end" style="width:8rem;">Est. Order Value</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+                <tr style="background:#f8f9fa;">
+                    <td colspan="8" class="text-end fw-semibold">Total</td>
+                    <td colspan="2" class="text-end fw-semibold" id="totalValue">₹0.00</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const grid = inv.grid('#lowStockGrid', {
+                url: '/Stock/LowStockList',
+                columns: [
+                    { data: 'itemCode', style: 'width:8rem;' },
+                    { data: 'itemName' },
+                    { data: 'categoryName' },
+                    { data: 'warehouseName' },
+                    { data: 'currentQuantity', className: 'text-end', render: inv.render.quantity },
+                    { data: 'reorderLevel', className: 'text-end', render: inv.render.quantity },
+                    {
+                        data: 'shortage',
+                        className: 'text-end',
+                        render: inv.render.quantity
+                    },
+                    { data: 'unitSymbol' },
+                    { data: 'unitCost', className: 'text-end', render: inv.render.money },
+                    {
+                        data: 'estimatedOrderValue',
+                        className: 'text-end fw-semibold',
+                        render: inv.render.money
+                    }
+                ],
+                rowCallback: function (row, data, index) {
+                    $(row).addClass('table-danger');
+                },
+                footerCallback: function (row, data, start, end, display) {
+                    let total = 0;
+                    data.forEach(item => total += item.estimatedOrderValue);
+                    $('#totalValue').text('₹' + inv.format.money(total));
+                },
+                order: [[6, 'desc']]
+            });
+
+            // Filter apply
+            $('#filterApply').on('click', function () {
+                const filters = {
+                    categoryId: $('#filterCategory').val(),
+                    warehouseId: $('#filterWarehouse').val()
+                };
+                grid.settings().ajax.data = function () { return filters; };
+                grid.ajax.reload();
+            });
+
+            $('#filterReset').on('click', function () {
+                $('#filterCategory, #filterWarehouse').val('').trigger('change');
+                grid.settings().ajax.data = function () { return {}; };
+                grid.ajax.reload();
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,160 @@
+@model FilterViewModel
+@*
+    Filter panel shared by the list screens and the report runner.
+    Only the controls named in Model.VisibleFilters are rendered, so one partial
+    serves every screen without each one hand-rolling its own filter bar.
+*@
+<div class="card shadow-sm mb-3 filter-panel">
+    <div class="card-body py-3">
+        <form id="filterForm" onsubmit="return false;">
+            <div class="row g-2 align-items-end">
+
+                @if (Model.Shows("dateRange"))
+                {
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1" for="filterFromDate">From</label>
+                        <input type="date" class="form-control form-control-sm" id="filterFromDate"
+                               name="FromDate" value="@Model.Filter.EffectiveFrom.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1" for="filterToDate">To</label>
+                        <input type="date" class="form-control form-control-sm" id="filterToDate"
+                               name="ToDate" value="@Model.Filter.EffectiveTo.ToString("yyyy-MM-dd")" />
+                    </div>
+                }
+
+                @if (Model.Shows("item"))
+                {
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small mb-1" for="filterItemId">Item</label>
+                        <select class="form-select form-select-sm select2" id="filterItemId" name="ItemId"
+                                data-placeholder="All items">
+                            <option value=""></option>
+                        </select>
+                    </div>
+                }
+
+                @if (Model.Shows("category"))
+                {
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1" for="filterCategoryId">Category</label>
+                        <select class="form-select form-select-sm" id="filterCategoryId" name="CategoryId">
+                            <option value="">All</option>
+                            @foreach (var option in Model.Lookups.Categories)
+                            {
+                                <option value="@option.Id">@option.Text</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                @if (Model.Shows("site"))
+                {
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1" for="filterSiteId">Site</label>
+                        <select class="form-select form-select-sm" id="filterSiteId" name="SiteId">
+                            <option value="">All</option>
+                            @foreach (var option in Model.Lookups.Sites)
+                            {
+                                <option value="@option.Id">@option.Text</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                @if (Model.Shows("warehouse"))
+                {
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1" for="filterWarehouseId">Warehouse</label>
+                        <select class="form-select form-select-sm" id="filterWarehouseId" name="WarehouseId">
+                            <option value="">All</option>
+                            @foreach (var option in Model.Lookups.Warehouses)
+                            {
+                                <option value="@option.Id" data-site="@option.ParentId">@option.Text</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                @if (Model.Shows("vendor"))
+                {
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small mb-1" for="filterVendorId">Vendor</label>
+                        <select class="form-select form-select-sm select2" id="filterVendorId" name="VendorId">
+                            <option value="">All vendors</option>
+                            @foreach (var option in Model.Lookups.Vendors)
+                            {
+                                <option value="@option.Id">@option.Text</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                @if (Model.Shows("department"))
+                {
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1" for="filterDepartmentId">Department</label>
+                        <select class="form-select form-select-sm" id="filterDepartmentId" name="DepartmentId">
+                            <option value="">All</option>
+                            @foreach (var option in Model.Lookups.Departments)
+                            {
+                                <option value="@option.Id">@option.Text</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                @if (Model.Shows("engineer"))
+                {
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1" for="filterEngineerId">Engineer</label>
+                        <select class="form-select form-select-sm" id="filterEngineerId" name="EngineerId">
+                            <option value="">All</option>
+                            @foreach (var option in Model.Lookups.Engineers)
+                            {
+                                <option value="@option.Id" data-department="@option.ParentId">@option.Text</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                @if (Model.Shows("itemType"))
+                {
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1" for="filterItemType">Item Type</label>
+                        <select class="form-select form-select-sm" id="filterItemType" name="ItemType">
+                            <option value="">All</option>
+                            @foreach (var option in FilterViewModel.ItemTypeOptions())
+                            {
+                                <option value="@option.Value">@option.Text</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                @if (Model.Shows("status"))
+                {
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1" for="filterStatus">Status</label>
+                        <select class="form-select form-select-sm" id="filterStatus" name="Status">
+                            <option value="">All</option>
+                            @foreach (var option in FilterViewModel.StatusOptions())
+                            {
+                                <option value="@option.Value">@option.Text</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                <div class="col-12 col-md-auto ms-auto d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" id="applyFilter">
+                        <i class="bi bi-funnel me-1"></i>Apply
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="resetFilter">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

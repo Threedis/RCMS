@@ -1,0 +1,110 @@
+@model MasterDto
+@{
+    ViewData["Title"] = "Current Stock";
+    ViewData["Icon"] = "bi-boxes";
+    ViewData["Subtitle"] = "Real-time inventory balances";
+}
+
+@section PageActions {
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="excel">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+    </a>
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Export" asp-route-format="pdf">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+    </a>
+}
+
+@Html.Partial("~/Views/Shared/_FilterPanel.cshtml",
+    new FilterViewModel { VisibleFilters = new[] { "category", "warehouse", "itemType" } })
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover table-sm align-middle w-100" id="stockGrid">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:8rem;">Item Code</th>
+                    <th>Item Name</th>
+                    <th>Category</th>
+                    <th class="d-none d-md-table-cell">Warehouse</th>
+                    <th class="text-end" style="width:7rem;">Current Qty</th>
+                    <th style="width:5rem;">UOM</th>
+                    <th class="text-end" style="width:7rem;">Reorder Lvl</th>
+                    <th class="text-end" style="width:7rem;">Unit Cost</th>
+                    <th class="text-end" style="width:8rem;">Stock Value</th>
+                    <th style="width:6rem;">Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+                <tr style="background:#f8f9fa;">
+                    <td colspan="8" class="text-end fw-semibold">Total</td>
+                    <td class="text-end fw-semibold" id="totalValue">₹0.00</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const grid = inv.grid('#stockGrid', {
+                url: '/Stock/List',
+                columns: [
+                    { data: 'itemCode', style: 'width:8rem;' },
+                    { data: 'itemName' },
+                    { data: 'categoryName' },
+                    { data: 'warehouseName', className: 'd-none d-md-table-cell' },
+                    { data: 'currentQuantity', className: 'text-end', render: inv.render.quantity },
+                    { data: 'unitSymbol' },
+                    { data: 'reorderLevel', className: 'text-end', render: inv.render.quantity },
+                    { data: 'unitCost', className: 'text-end', render: inv.render.money },
+                    { data: 'stockValue', className: 'text-end', render: inv.render.money },
+                    {
+                        data: 'status',
+                        orderable: false,
+                        render: function (status, type, row) {
+                            if (row.currentQuantity < row.reorderLevel) {
+                                return '<span class="badge bg-danger">Low Stock</span>';
+                            } else if (row.currentQuantity === 0) {
+                                return '<span class="badge bg-secondary">Out of Stock</span>';
+                            }
+                            return '<span class="badge bg-success">In Stock</span>';
+                        }
+                    }
+                ],
+                rowCallback: function (row, data, index) {
+                    if (data.currentQuantity < data.reorderLevel) {
+                        $(row).addClass('table-danger');
+                    }
+                },
+                footerCallback: function (row, data, start, end, display) {
+                    let total = 0;
+                    data.forEach(item => total += item.stockValue);
+                    $('#totalValue').text('₹' + inv.format.money(total));
+                },
+                order: [[0, 'asc']]
+            });
+
+            // Filter apply
+            $('#filterApply').on('click', function () {
+                const filters = {
+                    categoryId: $('#filterCategory').val(),
+                    warehouseId: $('#filterWarehouse').val(),
+                    itemType: $('#filterItemType').val()
+                };
+                grid.settings().ajax.data = function () { return filters; };
+                grid.ajax.reload();
+            });
+
+            $('#filterReset').on('click', function () {
+                $('#filterCategory, #filterWarehouse, #filterItemType').val('').trigger('change');
+                grid.settings().ajax.data = function () { return {}; };
+                grid.ajax.reload();
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,178 @@
+@model ReportViewModel
+@{
+    ViewData["Title"] = Model.Descriptor?.Name ?? "Report";
+    ViewData["Icon"] = "bi-file-earmark-bar-graph";
+}
+
+<div class="row">
+    <div class="col-12 col-lg-3">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">@Model.Descriptor?.Name</h5>
+            </div>
+            <div class="card-body">
+                <form id="reportForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ReportType" value="@Model.Descriptor?.Type" />
+
+                    @foreach (var filter in Model.Descriptor?.Filters ?? new List<ReportFilter>())
+                    {
+                        <div class="mb-3">
+                            <label class="form-label" for="@filter.Name">@filter.Label @(filter.IsRequired ? "<span class=\"text-danger\">*</span>" : "")</label>
+
+                            @switch (filter.ControlType)
+                            {
+                                case "DateRange":
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <input type="date" class="form-control" name="@(filter.Name)From"
+                                                   @(filter.IsRequired ? "required" : "") />
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="date" class="form-control" name="@(filter.Name)To"
+                                                   @(filter.IsRequired ? "required" : "") />
+                                        </div>
+                                    </div>
+                                    break;
+                                case "Select":
+                                    <select class="form-select" name="@filter.Name" @(filter.IsRequired ? "required" : "")>
+                                        <option value="">— All —</option>
+                                        @if (filter.Name == "VendorId")
+                                        {
+                                            @foreach (var vendor in Model.Lookups.Vendors.OrderBy(v => v.Name))
+                                            {
+                                                <option value="@vendor.Id">@vendor.Name</option>
+                                            }
+                                        }
+                                        @if (filter.Name == "CategoryId")
+                                        {
+                                            @foreach (var cat in Model.Lookups.Categories.OrderBy(c => c.Name))
+                                            {
+                                                <option value="@cat.Id">@cat.Name</option>
+                                            }
+                                        }
+                                        @if (filter.Name == "DepartmentId")
+                                        {
+                                            @foreach (var dept in Model.Lookups.Departments.OrderBy(d => d.Name))
+                                            {
+                                                <option value="@dept.Id">@dept.Name</option>
+                                            }
+                                        }
+                                        @if (filter.Name == "WarehouseId")
+                                        {
+                                            @foreach (var wh in Model.Lookups.Warehouses.OrderBy(w => w.Name))
+                                            {
+                                                <option value="@wh.Id">@wh.Name</option>
+                                            }
+                                        }
+                                    </select>
+                                    break;
+                                case "Text":
+                                    <input type="text" class="form-control" name="@filter.Name"
+                                           @(filter.IsRequired ? "required" : "") />
+                                    break;
+                            }
+                        </div>
+                    }
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-play-circle me-1"></i>Run Report
+                    </button>
+                </form>
+
+                @if (Model.Output != null)
+                {
+                    <hr />
+                    <div class="text-center mt-3">
+                        <a href="/Report/Export?type=@Model.Descriptor?.Type&format=excel" class="btn btn-sm btn-outline-secondary btn-block mb-2" style="display:block;">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                        </a>
+                        <a href="/Report/Export?type=@Model.Descriptor?.Type&format=pdf" class="btn btn-sm btn-outline-secondary btn-block" style="display:block;">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-9">
+        @if (Model.Output != null)
+        {
+            <div class="card shadow-sm">
+                <div class="table-responsive-card">
+                    <table class="table table-sm align-middle w-100">
+                        <thead class="table-light">
+                            <tr>
+                                @foreach (var col in Model.Output.Columns)
+                                {
+                                    <th @(col.IsNumeric ? "class=\"text-end\"" : "")>@col.Name</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.Output.Rows)
+                            {
+                                <tr>
+                                    @foreach (var cell in row.Values)
+                                    {
+                                        <td @(cell.IsNumeric ? "class=\"text-end\"" : "")>
+                                            @if (cell.IsNumeric)
+                                            {
+                                                @if (cell.ValueType == "Money")
+                                                {
+                                                    @Html.Raw(cell.FormattedValue)
+                                                }
+                                                else
+                                                {
+                                                    @cell.FormattedValue
+                                                }
+                                            }
+                                            else
+                                            {
+                                                @cell.Value
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer bg-light">
+                    <small class="text-muted">Showing @Model.Output.Rows.Count row(s)</small>
+                </div>
+            </div>
+        }
+        else if (Model.Descriptor != null)
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Configure filters and click <strong>Run Report</strong> to generate the report.
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            $('#reportForm').on('submit', function (e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const params = new URLSearchParams(formData);
+
+                inv.post('/Report/Run', Object.fromEntries(params)).then(response => {
+                    if (response.success) {
+                        window.location.href = `/Report/View?${params.toString()}`;
+                    } else {
+                        inv.toast(response.message, 'danger');
+                    }
+                });
+            });
+        })();
+    </script>
+}

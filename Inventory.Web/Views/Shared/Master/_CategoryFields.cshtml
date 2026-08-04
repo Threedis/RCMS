@@ -1,0 +1,14 @@
+@{
+    var lookups = ViewData["Lookups"] as LookupBundle ?? new LookupBundle();
+}
+<div class="col-md-6">
+    <label class="form-label" for="ParentCategoryId">Parent Category</label>
+    <select class="form-select" id="ParentCategoryId" name="ParentCategoryId">
+        <option value="">None (top level)</option>
+        @foreach (var option in lookups.Categories)
+        {
+            <option value="@option.Id">@option.Text</option>
+        }
+    </select>
+    <div class="form-text">Categories support two levels; a sub-category cannot itself have children.</div>
+</div>
