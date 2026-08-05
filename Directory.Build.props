@@ -36,10 +36,19 @@
     <QuestPdfVersion>2024.12.3</QuestPdfVersion>
   </PropertyGroup>
 
-  <!-- Force AutoMapper 12.0.1 globally to prevent transitive dependency conflicts -->
+  <!-- Force specific versions globally to prevent transitive dependency conflicts -->
   <ItemGroup>
+    <!-- AutoMapper versions -->
     <PackageReference Update="AutoMapper" Version="12.0.1" />
     <PackageReference Update="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <!-- Microsoft.Extensions packages - enforce .NET 8.0 compatibility -->
+    <PackageReference Update="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Update="Microsoft.Extensions.Logging" Version="8.0.2" />
+    <PackageReference Update="Microsoft.Extensions.DependencyInjection" Version="8.0.2" />
+    <PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Update="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageReference Update="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.2" />
+    <PackageReference Update="Microsoft.Extensions.Caching.Abstractions" Version="8.0.2" />
   </ItemGroup>
 
 </Project>
