@@ -176,7 +176,7 @@ public sealed class ItemRepository : GenericRepository<Item>, IItemRepository
 }
 
 /// <summary>Vendor master repository.</summary>
-public sealed class VendorRepository : GenericRepository<Vendor>, IVendorRepository
+public sealed class VendorRepository : MasterRepository<Vendor>, IVendorRepository
 {
     private readonly IStoredProcedureExecutor _executor;
 

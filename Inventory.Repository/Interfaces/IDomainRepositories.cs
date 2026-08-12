@@ -46,7 +46,7 @@ public interface IItemRepository : IGenericRepository<Item>
 }
 
 /// <summary>Vendor master access.</summary>
-public interface IVendorRepository : IGenericRepository<Vendor>
+public interface IVendorRepository : IMasterRepository<Vendor>
 {
     Task<PagedResult<VendorDto>> GetPagedVendorsAsync(
         PagedRequest request,
